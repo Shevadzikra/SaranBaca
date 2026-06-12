@@ -220,7 +220,7 @@ export default function RichTextEditor({
       </div>
 
       {/* Editor Content */}
-      <EditorContent editor={editor} />
+      <EditorContent editor={editor} className="bg-blue-50" />
     </div>
   );
 }

@@ -160,192 +160,200 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
       <div className="flex flex-col lg:flex-row gap-6">
         {/* Main Content */}
         <div className="flex-1 space-y-6">
-          <Tabs defaultValue="konten" className="space-y-6">
-            <TabsList className="bg-white/5 border border-white/10 rounded-xl p-1">
-              <TabsTrigger value="konten" className="rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-                Konten
-              </TabsTrigger>
-              <TabsTrigger value="seo" className="rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-                SEO
-              </TabsTrigger>
-              <TabsTrigger value="faq" className="rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
-                FAQ
-              </TabsTrigger>
-            </TabsList>
+          <Tabs defaultValue="konten" className="space-y-6 flex flex-col">
+            <div>
+              <TabsList className="bg-white/5 border border-white/10 rounded-xl p-1">
+                <TabsTrigger value="konten" className="rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+                  Konten
+                </TabsTrigger>
+                <TabsTrigger value="seo" className="rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+                  SEO
+                </TabsTrigger>
+                <TabsTrigger value="faq" className="rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+                  FAQ
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
-            <TabsContent value="konten" className="space-y-5">
-              {/* Title */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Judul Artikel</label>
-                <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Judul artikel yang menarik..."
-                  className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 h-12 rounded-xl text-lg" required />
-              </div>
-
-              {/* Slug */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Slug</label>
-                <Input value={articleSlug} onChange={(e) => setArticleSlug(e.target.value)} placeholder="slug-artikel"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl font-mono text-sm" required />
-              </div>
-
-              {/* Excerpt */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-300">Ringkasan / Excerpt</label>
-                  <span className={`text-xs ${excerpt.length > 160 ? "text-red-400" : "text-slate-500"}`}>
-                    {excerpt.length}/160
-                  </span>
-                </div>
-                <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Deskripsi singkat artikel (maks 160 karakter)..."
-                  className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl resize-none" rows={3} required />
-              </div>
-
-              {/* Rich Text Editor */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Konten Artikel</label>
-                <RichTextEditor content={content} onChange={setContent} />
-              </div>
-
-              {/* Featured Image */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Gambar Utama</label>
-                <ImageUploader value={featuredImage} onChange={setFeaturedImage} onRemove={() => setFeaturedImage("")} />
-              </div>
-
-              {/* Featured Image Alt */}
-              {featuredImage && (
+            <div>
+              {/* KONTEN */}
+              <TabsContent value="konten" className="space-y-5">
+                
+                {/* Title */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Alt Text Gambar Utama</label>
-                  <Input value={featuredImageAlt} onChange={(e) => setFeaturedImageAlt(e.target.value)} placeholder="Deskripsi gambar untuk aksesibilitas & SEO"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl" />
+                  <label className="text-sm font-medium text-slate-300">Judul Artikel</label>
+                  <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Judul artikel yang menarik..."
+                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 h-12 rounded-lg text-lg" required />
                 </div>
-              )}
-            </TabsContent>
 
-            <TabsContent value="seo" className="space-y-5">
-              {/* Focus Keyword */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Focus Keyword</label>
-                <Input value={focusKeyword} onChange={(e) => setFocusKeyword(e.target.value)} placeholder="Kata kunci utama artikel"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl" />
-              </div>
-
-              {/* Meta Title */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-300">Meta Title</label>
-                  <span className={`text-xs ${(metaTitle || title).length > 60 ? "text-red-400" : "text-slate-500"}`}>
-                    {(metaTitle || title).length}/60
-                  </span>
+                {/* Slug */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Slug</label>
+                  <Input value={articleSlug} onChange={(e) => setArticleSlug(e.target.value)} placeholder="slug-artikel"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg font-mono text-sm" required />
                 </div>
-                <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || "Meta title SEO..."}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl" />
-              </div>
 
-              {/* Meta Description */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-slate-300">Meta Description</label>
-                  <span className={`text-xs ${(metaDescription || excerpt).length > 160 ? "text-red-400" : "text-slate-500"}`}>
-                    {(metaDescription || excerpt).length}/160
-                  </span>
-                </div>
-                <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder={excerpt || "Meta description untuk mesin pencari..."}
-                  className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl resize-none" rows={3} />
-              </div>
-
-              {/* SERP Preview */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
-                  <Search className="w-4 h-4" />
-                  Preview SERP Google
-                </label>
-                <div className="bg-white rounded-xl p-4 space-y-1">
-                  <p className="text-sm text-green-700 truncate">
-                    saranbaca.vercel.app › artikel › {articleSlug || "slug-artikel"}
-                  </p>
-                  <p className="text-lg text-blue-800 font-medium truncate hover:underline cursor-default">
-                    {(metaTitle || title || "Judul Artikel Anda").slice(0, 60)}
-                    {(metaTitle || title || "").length > 60 ? "..." : ""} — SaranBaca
-                  </p>
-                  <p className="text-sm text-gray-600 line-clamp-2">
-                    {(metaDescription || excerpt || "Deskripsi meta artikel Anda akan muncul di sini...").slice(0, 160)}
-                    {(metaDescription || excerpt || "").length > 160 ? "..." : ""}
-                  </p>
-                </div>
-              </div>
-
-              {/* Canonical URL */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
-                  <Globe className="w-4 h-4" /> Canonical URL <span className="text-slate-500 text-xs">(opsional)</span>
-                </label>
-                <Input value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} placeholder="https://..."
-                  className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl" />
-              </div>
-
-              {/* Schema Type */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-300">Schema Type</label>
-                <Select value={schemaType} onValueChange={setSchemaType}>
-                  <SelectTrigger className="bg-white/5 border-white/10 text-slate-300 rounded-xl">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Article">Article</SelectItem>
-                    <SelectItem value="NewsArticle">NewsArticle</SelectItem>
-                    <SelectItem value="BlogPosting">BlogPosting</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {/* No Index */}
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input type="checkbox" checked={noIndex} onChange={(e) => setNoIndex(e.target.checked)}
-                  className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500" />
-                <span className="text-sm text-slate-300">No Index — Jangan indeks halaman ini oleh mesin pencari</span>
-              </label>
-            </TabsContent>
-
-            <TabsContent value="faq" className="space-y-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-medium text-slate-300">FAQ (Pertanyaan Umum)</h3>
-                  <p className="text-xs text-slate-500 mt-1">Maksimal 10 FAQ per artikel. Akan menghasilkan FAQPage schema.</p>
-                </div>
-                {faqs.length < 10 && (
-                  <Button type="button" variant="outline" size="sm"
-                    onClick={() => setFaqs([...faqs, { question: "", answer: "" }])}
-                    className="border-white/10 text-slate-300 hover:bg-white/10 rounded-xl">
-                    <Plus className="w-4 h-4 mr-1" /> Tambah
-                  </Button>
-                )}
-              </div>
-              {faqs.map((faq, i) => (
-                <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+                {/* Excerpt */}
+                <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-slate-500 font-medium">FAQ #{i + 1}</span>
-                    <button type="button" onClick={() => setFaqs(faqs.filter((_, j) => j !== i))}
-                      className="p-1 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    <label className="text-sm font-medium text-slate-300">Ringkasan / Excerpt</label>
+                    <span className={`text-xs ${excerpt.length > 160 ? "text-red-400" : "text-slate-500"}`}>
+                      {excerpt.length}/160
+                    </span>
                   </div>
-                  <Input value={faq.question}
-                    onChange={(e) => { const n = [...faqs]; n[i].question = e.target.value; setFaqs(n); }}
-                    placeholder="Pertanyaan"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl" />
-                  <Textarea value={faq.answer}
-                    onChange={(e) => { const n = [...faqs]; n[i].answer = e.target.value; setFaqs(n); }}
-                    placeholder="Jawaban"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-xl resize-none" rows={2} />
+                  <Textarea value={excerpt} onChange={(e) => setExcerpt(e.target.value)} placeholder="Deskripsi singkat artikel (maks 160 karakter)..."
+                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg resize-none" rows={3} required />
                 </div>
-              ))}
-              {faqs.length === 0 && (
-                <div className="text-center py-8 text-slate-500 text-sm">
-                  Belum ada FAQ. Klik tombol &quot;Tambah&quot; untuk menambahkan.
+
+                {/* Rich Text Editor */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Konten Artikel</label>
+                  <RichTextEditor content={content} onChange={setContent} />
                 </div>
-              )}
-            </TabsContent>
+
+                {/* Featured Image */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Gambar Utama</label>
+                  <ImageUploader value={featuredImage} onChange={setFeaturedImage} onRemove={() => setFeaturedImage("")} />
+                </div>
+
+                {/* Featured Image Alt */}
+                {featuredImage && (
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-300">Alt Text Gambar Utama</label>
+                    <Input value={featuredImageAlt} onChange={(e) => setFeaturedImageAlt(e.target.value)} placeholder="Deskripsi gambar untuk aksesibilitas & SEO"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                  </div>
+                )}
+              </TabsContent>
+
+              {/* SEO */}
+              <TabsContent value="seo" className="space-y-5">
+                {/* Focus Keyword */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Focus Keyword</label>
+                  <Input value={focusKeyword} onChange={(e) => setFocusKeyword(e.target.value)} placeholder="Kata kunci utama artikel"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                </div>
+
+                {/* Meta Title */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-slate-300">Meta Title</label>
+                    <span className={`text-xs ${(metaTitle || title).length > 60 ? "text-red-400" : "text-slate-500"}`}>
+                      {(metaTitle || title).length}/60
+                    </span>
+                  </div>
+                  <Input value={metaTitle} onChange={(e) => setMetaTitle(e.target.value)} placeholder={title || "Meta title SEO..."}
+                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                </div>
+
+                {/* Meta Description */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-slate-300">Meta Description</label>
+                    <span className={`text-xs ${(metaDescription || excerpt).length > 160 ? "text-red-400" : "text-slate-500"}`}>
+                      {(metaDescription || excerpt).length}/160
+                    </span>
+                  </div>
+                  <Textarea value={metaDescription} onChange={(e) => setMetaDescription(e.target.value)} placeholder={excerpt || "Meta description untuk mesin pencari..."}
+                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg resize-none" rows={3} />
+                </div>
+
+                {/* SERP Preview */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <Search className="w-4 h-4" />
+                    Preview SERP Google
+                  </label>
+                  <div className="bg-white rounded-lg p-4 space-y-1">
+                    <p className="text-sm text-green-700 truncate">
+                      saranbaca.vercel.app › artikel › {articleSlug || "slug-artikel"}
+                    </p>
+                    <p className="text-lg text-blue-800 font-medium truncate hover:underline cursor-default">
+                      {(metaTitle || title || "Judul Artikel Anda").slice(0, 60)}
+                      {(metaTitle || title || "").length > 60 ? "..." : ""} — SaranBaca
+                    </p>
+                    <p className="text-sm text-gray-600 line-clamp-2">
+                      {(metaDescription || excerpt || "Deskripsi meta artikel Anda akan muncul di sini...").slice(0, 160)}
+                      {(metaDescription || excerpt || "").length > 160 ? "..." : ""}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Canonical URL */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                    <Globe className="w-4 h-4" /> Canonical URL <span className="text-slate-500 text-xs">(opsional)</span>
+                  </label>
+                  <Input value={canonicalUrl} onChange={(e) => setCanonicalUrl(e.target.value)} placeholder="https://..."
+                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                </div>
+
+                {/* Schema Type */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Schema Type</label>
+                  <Select value={schemaType} onValueChange={setSchemaType}>
+                    <SelectTrigger className="bg-white/5 border-white/10 text-slate-300 rounded-lg">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Article">Article</SelectItem>
+                      <SelectItem value="NewsArticle">NewsArticle</SelectItem>
+                      <SelectItem value="BlogPosting">BlogPosting</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* No Index */}
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input type="checkbox" checked={noIndex} onChange={(e) => setNoIndex(e.target.checked)}
+                    className="w-4 h-4 rounded border-white/20 bg-white/5 text-emerald-500 focus:ring-emerald-500" />
+                  <span className="text-sm text-slate-300">No Index — Jangan indeks halaman ini oleh mesin pencari</span>
+                </label>
+              </TabsContent>
+                
+              {/* FAQ */}
+              <TabsContent value="faq" className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-300">FAQ (Pertanyaan Umum)</h3>
+                    <p className="text-xs text-slate-500 mt-1">Maksimal 10 FAQ per artikel. Akan menghasilkan FAQPage schema.</p>
+                  </div>
+                  {faqs.length < 10 && (
+                    <Button type="button" variant="secondary" size="sm"
+                      onClick={() => setFaqs([...faqs, { question: "", answer: "" }])}
+                      className="border-white/10 text-slate-900 hover:bg-white/10 hover:text-slate-300 rounded-lg">
+                      <Plus className="w-4 h-4 mr-1" /> Tambah
+                    </Button>
+                  )}
+                </div>
+                {faqs.map((faq, i) => (
+                  <div key={i} className="bg-white/5 border border-white/10 rounded-xl p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs text-slate-500 font-medium">FAQ #{i + 1}</span>
+                      <button type="button" onClick={() => setFaqs(faqs.filter((_, j) => j !== i))}
+                        className="p-1 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <Input value={faq.question}
+                      onChange={(e) => { const n = [...faqs]; n[i].question = e.target.value; setFaqs(n); }}
+                      placeholder="Pertanyaan"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                    <Textarea value={faq.answer}
+                      onChange={(e) => { const n = [...faqs]; n[i].answer = e.target.value; setFaqs(n); }}
+                      placeholder="Jawaban"
+                      className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg resize-none" rows={2} />
+                  </div>
+                ))}
+                {faqs.length === 0 && (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    Belum ada FAQ. Klik tombol &quot;Tambah&quot; untuk menambahkan.
+                  </div>
+                )}
+              </TabsContent>
+            </div>
           </Tabs>
         </div>
 
