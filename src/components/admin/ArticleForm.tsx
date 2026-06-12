@@ -213,7 +213,7 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
 
                 {/* Featured Image */}
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Gambar Utama</label>
+                  <label className="text-sm font-medium text-slate-300">Gambar Utama (Maksimal 4.5MB)</label>
                   <ImageUploader value={featuredImage} onChange={setFeaturedImage} onRemove={() => setFeaturedImage("")} />
                 </div>
 
