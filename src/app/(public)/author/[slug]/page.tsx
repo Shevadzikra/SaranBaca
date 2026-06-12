@@ -5,7 +5,7 @@ import Link from "next/link";
 import prisma from "@/lib/prisma";
 import ArticleCard from "@/components/public/ArticleCard";
 import { SITE_NAME, BASE_URL } from "@/lib/seo";
-import { ChevronRight, Globe, Send, ExternalLink } from "lucide-react";
+import { ChevronRight, Globe, Send, ExternalLink, Focus } from "lucide-react";
 
 export const revalidate = 3600;
 
@@ -134,6 +134,12 @@ export default async function AuthorPage({
                 <a href={author.websiteUrl} target="_blank" rel="noopener noreferrer"
                   className="p-2 rounded-lg bg-white/80 text-gray-500 hover:text-emerald-600 transition-colors">
                   <Globe className="w-4 h-4" />
+                </a>
+              )}
+              {author.instagramUrl && (
+                <a href={author.instagramUrl} target="_blank" rel="noopener noreferrer"
+                  className="p-2 rounded-lg bg-white/80 text-gray-500 hover:text-emerald-600 transition-colors">
+                  <Focus className="w-4 h-4" />
                 </a>
               )}
               {author.twitterUrl && (
