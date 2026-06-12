@@ -18,6 +18,9 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
+  verification: {
+    google: "5aIAW2c6mcX-W8JPqSUQ_IGte85gz8KWwQ3HBVAabEE",
+  },
   title: {
     default: `${SITE_NAME} — Rekomendasi Bacaan Berkualitas`,
     template: `%s — ${SITE_NAME}`,
