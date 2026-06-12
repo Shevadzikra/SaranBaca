@@ -319,6 +319,31 @@ export default async function ArticleDetailPage({
               dangerouslySetInnerHTML={{ __html: contentWithIds }}
             />
 
+            {/* FAQ Section */}
+            {article.faqs.length > 0 && (
+              <section className="mt-8 pt-8 border-t border-gray-100">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  Pertanyaan Umum (FAQ)
+                </h2>
+                <div className="space-y-3">
+                  {article.faqs.map((faq) => (
+                    <details
+                      key={faq.id}
+                      className="group bg-gray-50 rounded-xl border border-gray-100 overflow-hidden"
+                    >
+                      <summary className="flex items-center justify-between px-5 py-4 cursor-pointer text-gray-900 font-medium text-sm hover:bg-gray-100 transition-colors">
+                        {faq.question}
+                        <ChevronRight className="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform" />
+                      </summary>
+                      <div className="px-5 pb-4 text-sm text-gray-600 leading-relaxed">
+                        {faq.answer}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              </section>
+            )}
+
             {/* Tags */}
             {article.tags.length > 0 && (
               <div className="flex flex-wrap gap-2 mt-10 pt-8 border-t border-gray-100">
@@ -345,33 +370,8 @@ export default async function ArticleDetailPage({
               />
             </div>
 
-            {/* FAQ Section */}
-            {article.faqs.length > 0 && (
-              <section className="mt-12 pt-8 border-t border-gray-100">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                  Pertanyaan Umum (FAQ)
-                </h2>
-                <div className="space-y-3">
-                  {article.faqs.map((faq) => (
-                    <details
-                      key={faq.id}
-                      className="group bg-gray-50 rounded-xl border border-gray-100 overflow-hidden"
-                    >
-                      <summary className="flex items-center justify-between px-5 py-4 cursor-pointer text-gray-900 font-medium text-sm hover:bg-gray-100 transition-colors">
-                        {faq.question}
-                        <ChevronRight className="w-4 h-4 text-gray-400 group-open:rotate-90 transition-transform" />
-                      </summary>
-                      <div className="px-5 pb-4 text-sm text-gray-600 leading-relaxed">
-                        {faq.answer}
-                      </div>
-                    </details>
-                  ))}
-                </div>
-              </section>
-            )}
-
             {/* Author Card */}
-            <div className="mt-12 p-6 bg-gray-50 rounded-2xl border border-gray-100">
+            <div className="mt-12 mb-8 p-6 bg-gray-50 rounded-2xl border border-gray-100">
               <div className="flex items-start gap-4">
                 {article.author.avatar ? (
                   <Image
