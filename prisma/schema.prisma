@@ -1,8 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
@@ -10,4 +5,113 @@ generator client {
 
 datasource db {
   provider = "postgresql"
+}
+
+enum Status {
+  DRAFT
+  PUBLISHED
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+}
+
+model User {
+  id    String @id @default(cuid())
+  name  String
+  slug  String @unique
+  email String @unique
+  password String
+  role  Role   @default(ADMIN)
+
+  // Profil Author (E-E-A-T)
+  bio       String?
+  avatar    String?
+  jobTitle  String?
+  expertise String[] @default([])
+
+  // Social & Kredensial
+  websiteUrl       String?
+  twitterUrl       String?
+  linkedinUrl      String?
+  instagramUrl     String?
+  googleScholarUrl String?
+
+  // Metadata SEO Author Page
+  metaTitle       String?
+  metaDescription String?
+
+  articles Article[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Article {
+  id            String   @id @default(cuid())
+  title         String
+  slug          String   @unique
+  excerpt       String
+  content       String
+  featuredImage String?
+  featuredImageAlt String?
+  status        Status   @default(DRAFT)
+  publishedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // SEO Fields
+  metaTitle       String?
+  metaDescription String?
+  canonicalUrl    String?
+  noIndex         Boolean @default(false)
+  focusKeyword    String?
+
+  // Schema.org
+  schemaType String? @default("Article")
+
+  // Relasi
+  categoryId String?
+  category   Category? @relation(fields: [categoryId], references: [id])
+  tags       Tag[]     @relation("ArticleToTag")
+  author     User      @relation(fields: [authorId], references: [id])
+  authorId   String
+  faqs       FAQ[]
+
+  // Statistik
+  viewCount   Int @default(0)
+  readingTime Int?
+}
+
+model Category {
+  id              String    @id @default(cuid())
+  name            String    @unique
+  slug            String    @unique
+  description     String?
+  metaTitle       String?
+  metaDescription String?
+  articles        Article[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Tag {
+  id       String    @id @default(cuid())
+  name     String    @unique
+  slug     String    @unique
+  articles Article[] @relation("ArticleToTag")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model FAQ {
+  id        String  @id @default(cuid())
+  question  String
+  answer    String
+  order     Int     @default(0)
+  articleId String
+  article   Article @relation(fields: [articleId], references: [id], onDelete: Cascade)
 }
