@@ -32,9 +32,9 @@ export default function Footer() {
 
           {/* Kategori */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
+            <h1 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
               Kategori
-            </h3>
+            </h1>
             <ul className="space-y-2.5">
               {["Teknologi", "Bisnis", "Gaya Hidup", "Pendidikan", "Kesehatan"].map((cat) => (
                 <li key={cat}>
@@ -51,9 +51,9 @@ export default function Footer() {
 
           {/* Links */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
+            <h1 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
               Lainnya
-            </h3>
+            </h1>
             <ul className="space-y-2.5">
               <li>
                 <Link href="/sitemap.xml" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">
