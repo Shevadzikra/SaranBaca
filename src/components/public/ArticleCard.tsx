@@ -38,6 +38,9 @@ export default function ArticleCard({ article, featured = false }: ArticleCardPr
             src={article.featuredImage}
             alt={article.featuredImageAlt || article.title}
             fill
+            priority={featured}
+            loading={featured ? "eager" : "lazy"}
+            sizes={featured ? "(max-width: 768px) 100vw, 50vw" : "33vw"}
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
         ) : (
@@ -54,13 +57,13 @@ export default function ArticleCard({ article, featured = false }: ArticleCardPr
 
       {/* Content */}
       <div className={`p-5 ${featured ? "md:w-1/2 md:p-6 md:flex md:flex-col md:justify-center" : ""}`}>
-        <h3
+        <h1
           className={`font-bold text-gray-900 group-hover:text-emerald-600 transition-colors line-clamp-2 ${
             featured ? "text-xl md:text-2xl mb-3" : "text-lg mb-2"
           }`}
         >
           {article.title}
-        </h3>
+        </h1>
         <p className={`text-gray-500 line-clamp-2 ${featured ? "text-base mb-4" : "text-sm mb-3"}`}>
           {article.excerpt}
         </p>
