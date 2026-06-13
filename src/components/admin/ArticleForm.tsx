@@ -1,4 +1,6 @@
 "use client";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
+export const NEXT_PUBLIC_HOSTNAME = new URL(SITE_URL).hostname;
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
@@ -268,7 +270,7 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                   </label>
                   <div className="bg-white rounded-lg p-4 space-y-1">
                     <p className="text-sm text-green-700 truncate">
-                      saranbaca.vercel.app › artikel › {articleSlug || "slug-artikel"}
+                      {NEXT_PUBLIC_HOSTNAME} › artikel › {articleSlug || "slug-artikel"}
                     </p>
                     <p className="text-lg text-blue-800 font-medium truncate hover:underline cursor-default">
                       {(metaTitle || title || "Judul Artikel Anda").slice(0, 60)}

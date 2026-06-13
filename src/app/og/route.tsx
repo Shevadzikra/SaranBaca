@@ -1,5 +1,7 @@
 import { ImageResponse } from "next/og";
 import type { NextRequest } from "next/server";
+export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL!;
+export const NEXT_PUBLIC_HOSTNAME = new URL(SITE_URL).hostname;
 
 export const runtime = "edge";
 
@@ -88,7 +90,7 @@ export async function GET(req: NextRequest) {
             </span>
           )}
           <span style={{ fontSize: "16px", color: "#475569" }}>
-            saranbaca.vercel.app
+            {NEXT_PUBLIC_HOSTNAME}
           </span>
         </div>
       </div>
