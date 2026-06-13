@@ -64,10 +64,10 @@ export default function ArticleCard({ article, featured = false }: ArticleCardPr
         >
           {article.title}
         </h1>
-        <p className={`text-gray-500 line-clamp-2 ${featured ? "text-base mb-4" : "text-sm mb-3"}`}>
+        <p className={`text-gray-700 line-clamp-2 ${featured ? "text-base mb-4" : "text-sm mb-3"}`}>
           {article.excerpt}
         </p>
-        <div className="flex items-center gap-4 text-xs text-gray-400">
+        <div className="flex items-center gap-4 text-xs text-gray-500">
           {article.publishedAt && (
             <span>
               {format(new Date(article.publishedAt), "dd MMM yyyy", { locale: id })}
