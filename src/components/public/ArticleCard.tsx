@@ -39,7 +39,7 @@ export default function ArticleCard({ article, featured = false }: ArticleCardPr
             alt={article.featuredImageAlt || article.title}
             fill
             priority={featured}
-            loading={featured ? "eager" : "lazy"}
+            fetchPriority={featured ? "high" : "auto"}
             sizes={featured ? "(max-width: 768px) 100vw, 50vw" : "33vw"}
             className="object-cover group-hover:scale-105 transition-transform duration-500"
           />
