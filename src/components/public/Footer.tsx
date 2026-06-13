@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BookOpen } from "lucide-react";
+import Image from "next/image";
 
 export default function Footer() {
   return (
@@ -10,7 +11,14 @@ export default function Footer() {
           <div className="md:col-span-2">
             <Link href="/" className="flex items-center gap-2.5 mb-4">
               <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                <BookOpen className="w-5 h-5 text-white" />
+                {/* Logo (next/image) */}
+                <Image
+                  src="/logo.svg"
+                  alt="SaranBaca"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
               </div>
               <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
                 SaranBaca

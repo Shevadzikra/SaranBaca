@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
+import Image from "next/image";
 
 const navItems = [
   {
@@ -55,7 +56,14 @@ function SidebarContent({ collapsed = false }: { collapsed?: boolean }) {
       <div className="p-6 border-b border-slate-700/50">
         <Link href="/admin/dashboard" className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-400 to-teal-500 flex items-center justify-center shadow-lg shadow-emerald-500/20">
-            <BookOpen className="w-5 h-5 text-white" />
+            {/* Logo (next/image) */}
+            <Image
+              src="/logo.svg"
+              alt="SaranBaca"
+              width={24}
+              height={24}
+              className="w-6 h-6"
+            />
           </div>
           {!collapsed && (
             <span className="text-lg font-bold text-white tracking-tight">

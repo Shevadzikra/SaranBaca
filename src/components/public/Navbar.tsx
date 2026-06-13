@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { BookOpen, Menu, X } from "lucide-react";
+import Image from "next/image";
 
 const navLinks = [
   { label: "Beranda", href: "/" },
@@ -25,7 +26,14 @@ export default function Navbar() {
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 group">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-sm group-hover:shadow-md transition-shadow">
-              <BookOpen className="w-5 h-5 text-white" />
+                {/* Logo (next/image) */}
+                <Image
+                  src="/logo.svg"
+                  alt="SaranBaca"
+                  width={24}
+                  height={24}
+                  className="w-6 h-6"
+                />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
               SaranBaca
