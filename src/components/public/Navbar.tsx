@@ -8,6 +8,7 @@ import Image from "next/image";
 
 const navLinks = [
   { label: "Beranda", href: "/" },
+  { label: "Kontak", href: "/kontak" },
   { label: "Teknologi", href: "/kategori/teknologi" },
   { label: "Bisnis", href: "/kategori/bisnis" },
   { label: "Gaya Hidup", href: "/kategori/gaya-hidup" },
@@ -60,6 +61,14 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            
+            {/* Nav Icon / Button untuk Tentang Kami */}
+            <Link
+              href="/tentang-kami"
+              className="ml-4 px-5 py-2 rounded-full text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 shadow-sm transition-all duration-200"
+            >
+              Tentang Kami
+            </Link>
           </nav>
 
           {/* Mobile toggle */}
@@ -97,6 +106,15 @@ export default function Navbar() {
                 </Link>
               );
             })}
+            <div className="pt-2 pb-1 px-4 border-t border-gray-100 mt-2">
+              <Link
+                href="/tentang-kami"
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center justify-center w-full px-4 py-2.5 rounded-lg text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 transition-colors"
+              >
+                Tentang Kami
+              </Link>
+            </div>
           </nav>
         )}
       </div>

@@ -55,7 +55,19 @@ export default function Footer() {
               Lainnya
             </h1>
             <ul className="space-y-2.5">
-              <li>
+              <li className="flex flex-col gap-3.5">
+                <Link href="/tentang-kami" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">
+                  Tentang Kami
+                </Link>
+                <Link href="/kontak" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">
+                  Kontak
+                </Link>
+                <Link href="/privacy-policy" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">
+                  Privacy Policy
+                </Link>
+                <Link href="/terms-of-service" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">
+                  Terms of Service
+                </Link>
                 <Link href="/sitemap.xml" className="text-sm text-gray-500 hover:text-emerald-600 transition-colors">
                   Sitemap
                 </Link>
