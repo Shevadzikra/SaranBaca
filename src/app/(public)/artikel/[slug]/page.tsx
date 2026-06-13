@@ -321,6 +321,7 @@ export default async function ArticleDetailPage({
                 fill
                 className="object-cover"
                 priority
+                fetchPriority="high"
               />
             </div>
             {article.featuredImageCaption && (
@@ -360,10 +361,49 @@ export default async function ArticleDetailPage({
 
           {/* Content */}
           <div className="flex-1 min-w-0 max-w-3xl">
-            <div
-              className="prose-article"
-              dangerouslySetInnerHTML={{ __html: contentWithIds }}
-            />
+            {blocks ? (
+              <div className="prose-article">
+                {blocks.map((block, index) => {
+                  const blockTocId = block.subtitle 
+                    ? block.subtitle.toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-").replace(/-+/g, "-").trim() 
+                    : "";
+                  return (
+                    <div key={block.id}>
+                      {block.subtitle && <h2 id={blockTocId}>{block.subtitle}</h2>}
+                      
+                      {block.image && (
+                        <figure className="my-8">
+                          <Image 
+                            src={block.image} 
+                            alt={block.imageAlt || block.subtitle || 'Gambar artikel'} 
+                            width={800} 
+                            height={450} 
+                            sizes="(max-width: 768px) 100vw, 800px"
+                            className="w-full h-auto rounded-2xl object-cover" 
+                          />
+                          {block.imageCaption && (
+                            <figcaption className="text-left text-sm text-gray-500 mt-3">
+                              {block.imageCaption}
+                            </figcaption>
+                          )}
+                        </figure>
+                      )}
+                      
+                      {block.description && (
+                        <div dangerouslySetInnerHTML={{ __html: addHeadingIds(block.description) }} />
+                      )}
+                      
+                      {index < blocks.length - 1 && <hr className="my-10 border-gray-100 border-dashed" />}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div
+                className="prose-article"
+                dangerouslySetInnerHTML={{ __html: contentWithIds }}
+              />
+            )}
 
             {/* FAQ Section */}
             {article.faqs.length > 0 && (
