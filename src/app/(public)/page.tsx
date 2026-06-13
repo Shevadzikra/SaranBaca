@@ -73,7 +73,7 @@ export default async function HomePage() {
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-hide">
           <Link
             href="/"
-            className="shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-emerald-500 text-white shadow-sm"
+            className="shrink-0 px-4 py-2 rounded-full text-sm font-medium bg-emerald-600 text-white shadow-sm"
           >
             Semua
           </Link>
@@ -112,8 +112,8 @@ export default async function HomePage() {
           </div>
         ) : (
           <div className="text-center py-16 bg-gray-50 rounded-2xl">
-            <BookOpen className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-400 text-lg">
+            <BookOpen className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+            <p className="text-gray-500 text-lg">
               Belum ada artikel. Segera hadir!
             </p>
           </div>
