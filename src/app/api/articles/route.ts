@@ -79,6 +79,7 @@ export async function POST(request: Request) {
         content: body.content,
         featuredImage: body.featuredImage || null,
         featuredImageAlt: body.featuredImageAlt || null,
+        featuredImageCaption: body.featuredImageCaption || null,
         status: body.status || "DRAFT",
         publishedAt: body.status === "PUBLISHED" ? new Date() : null,
         categoryId: body.categoryId || null,

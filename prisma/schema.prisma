@@ -56,6 +56,7 @@ model Article {
   content       String
   featuredImage String?
   featuredImageAlt String?
+  featuredImageCaption String?
   status        Status   @default(DRAFT)
   publishedAt   DateTime?
   createdAt     DateTime @default(now())

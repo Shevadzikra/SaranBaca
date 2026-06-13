@@ -65,6 +65,7 @@ export async function PUT(
         content: body.content,
         featuredImage: body.featuredImage || null,
         featuredImageAlt: body.featuredImageAlt || null,
+        featuredImageCaption: body.featuredImageCaption || null,
         status: body.status || "DRAFT",
         publishedAt,
         categoryId: body.categoryId || null,

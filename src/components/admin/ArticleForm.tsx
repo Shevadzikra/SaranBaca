@@ -16,10 +16,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Loader2, Plus, Trash2, Globe, Search, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Save, Loader2, Plus, Trash2, Globe, Search, CheckCircle2, AlertTriangle, ArrowUp, ArrowDown } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import ImageUploader from "./ImageUploader";
 import slugify from "slugify";
+
+export type ArticleBlock = {
+  id: string;
+  subtitle: string;
+  image: string;
+  imageAlt: string;
+  imageCaption: string;
+  description: string;
+};
+
 
 interface ArticleFormProps {
   initialData?: {
@@ -30,6 +40,7 @@ interface ArticleFormProps {
     content: string;
     featuredImage?: string | null;
     featuredImageAlt?: string | null;
+    featuredImageCaption?: string | null;
     status: "DRAFT" | "PUBLISHED";
     categoryId?: string | null;
     tagIds?: string[];
@@ -52,9 +63,21 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
   const [title, setTitle] = useState(initialData?.title || "");
   const [articleSlug, setArticleSlug] = useState(initialData?.slug || "");
   const [excerpt, setExcerpt] = useState(initialData?.excerpt || "");
-  const [content, setContent] = useState(initialData?.content || "");
+  
+  const [blocks, setBlocks] = useState<ArticleBlock[]>(() => {
+    if (!initialData?.content) return [{ id: crypto.randomUUID(), subtitle: "", image: "", imageAlt: "", imageCaption: "", description: "" }];
+    try {
+      const parsed = JSON.parse(initialData.content);
+      if (Array.isArray(parsed)) return parsed;
+    } catch {
+      // Legacy HTML parsing fallback
+    }
+    return [{ id: crypto.randomUUID(), subtitle: "", image: "", imageAlt: "", imageCaption: "", description: initialData.content }];
+  });
+
   const [featuredImage, setFeaturedImage] = useState(initialData?.featuredImage || "");
   const [featuredImageAlt, setFeaturedImageAlt] = useState(initialData?.featuredImageAlt || "");
+  const [featuredImageCaption, setFeaturedImageCaption] = useState(initialData?.featuredImageCaption || "");
   const [status, setStatus] = useState<"DRAFT" | "PUBLISHED">(initialData?.status || "DRAFT");
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || "");
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialData?.tagIds || []);
@@ -96,9 +119,10 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
       title,
       slug: articleSlug,
       excerpt,
-      content,
+      content: JSON.stringify(blocks),
       featuredImage: featuredImage || null,
       featuredImageAlt: featuredImageAlt || null,
+      featuredImageCaption: featuredImageCaption || null,
       status,
       categoryId: categoryId || null,
       tagIds: selectedTagIds,
@@ -143,8 +167,8 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
     { label: "Meta description mengandung focus keyword", pass: focusKeyword ? (metaDescription || excerpt).toLowerCase().includes(focusKeyword.toLowerCase()) : false },
     { label: "Slug mengandung focus keyword", pass: focusKeyword ? articleSlug.toLowerCase().includes(focusKeyword.toLowerCase().replace(/\s+/g, "-")) : false },
     { label: "Alt text gambar utama terisi", pass: !!featuredImageAlt },
-    { label: "Konten minimal 300 kata", pass: content.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length >= 300 },
-    { label: "Ada subheading H2 di konten", pass: content.includes("<h2") },
+    { label: "Konten minimal 300 kata", pass: blocks.reduce((acc, block) => acc + block.description.replace(/<[^>]*>/g, ""), "").split(/\s+/).filter(Boolean).length >= 300 },
+    { label: "Ada subheading H2 di konten", pass: blocks.some(b => b.subtitle) || blocks.some(b => b.description.includes("<h2")) },
     { label: "Meta description ≤ 160 karakter", pass: (metaDescription || excerpt).length <= 160 && (metaDescription || excerpt).length > 0, warn: (metaDescription || excerpt).length > 160 },
     { label: "Meta title ≤ 60 karakter", pass: (metaTitle || title).length <= 60 && (metaTitle || title).length > 0, warn: (metaTitle || title).length > 60 },
   ];
@@ -155,6 +179,29 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
         ? prev.filter((id) => id !== tagId)
         : [...prev, tagId]
     );
+  }
+
+  function addBlock() {
+    setBlocks([...blocks, { id: crypto.randomUUID(), subtitle: "", image: "", imageAlt: "", imageCaption: "", description: "" }]);
+  }
+
+  function updateBlock(id: string, updates: Partial<ArticleBlock>) {
+    setBlocks(blocks.map(b => b.id === id ? { ...b, ...updates } : b));
+  }
+
+  function removeBlock(id: string) {
+    if (blocks.length === 1) return; // Prevent removing last block
+    setBlocks(blocks.filter(b => b.id !== id));
+  }
+
+  function moveBlock(index: number, direction: 'up' | 'down') {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === blocks.length - 1) return;
+    const newBlocks = [...blocks];
+    const temp = newBlocks[index];
+    newBlocks[index] = newBlocks[index + (direction === 'up' ? -1 : 1)];
+    newBlocks[index + (direction === 'up' ? -1 : 1)] = temp;
+    setBlocks(newBlocks);
   }
 
   return (
@@ -195,6 +242,27 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                     className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg font-mono text-sm" required />
                 </div>
 
+                {/* Featured Image */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-300">Gambar Utama (Maksimal 4.5MB)</label>
+                  <ImageUploader value={featuredImage} onChange={setFeaturedImage} onRemove={() => setFeaturedImage("")} />
+                </div>
+                {/* Featured Image Alt & Caption */}
+                {featuredImage && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-300">Alt Text Gambar Utama</label>
+                      <Input value={featuredImageAlt} onChange={(e) => setFeaturedImageAlt(e.target.value)} placeholder="Deskripsi gambar untuk aksesibilitas & SEO"
+                        className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-300">Caption Gambar Utama</label>
+                      <Input value={featuredImageCaption} onChange={(e) => setFeaturedImageCaption(e.target.value)} placeholder="Sumber/Caption gambar utama"
+                        className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                    </div>
+                  </div>
+                )}
+
                 {/* Excerpt */}
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
@@ -207,26 +275,72 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                     className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg resize-none" rows={3} required />
                 </div>
 
-                {/* Rich Text Editor */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Konten Artikel</label>
-                  <RichTextEditor content={content} onChange={setContent} />
-                </div>
-
-                {/* Featured Image */}
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-300">Gambar Utama (Maksimal 4.5MB)</label>
-                  <ImageUploader value={featuredImage} onChange={setFeaturedImage} onRemove={() => setFeaturedImage("")} />
-                </div>
-
-                {/* Featured Image Alt */}
-                {featuredImage && (
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-300">Alt Text Gambar Utama</label>
-                    <Input value={featuredImageAlt} onChange={(e) => setFeaturedImageAlt(e.target.value)} placeholder="Deskripsi gambar untuk aksesibilitas & SEO"
-                      className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                {/* Blocks Builder */}
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <label className="text-sm font-medium text-slate-300">Konten Artikel</label>
                   </div>
-                )}
+                  
+                  {blocks.map((block, i) => (
+                    <div key={block.id} className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-5 relative group">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">Blok #{i + 1}</span>
+                        <div className="flex items-center gap-1">
+                          <button type="button" onClick={() => moveBlock(i, 'up')} disabled={i === 0}
+                            className="p-1.5 text-slate-400 hover:bg-white/10 hover:text-white rounded-lg disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors">
+                            <ArrowUp className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => moveBlock(i, 'down')} disabled={i === blocks.length - 1}
+                            className="p-1.5 text-slate-400 hover:bg-white/10 hover:text-white rounded-lg disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors">
+                            <ArrowDown className="w-4 h-4" />
+                          </button>
+                          <button type="button" onClick={() => removeBlock(block.id)} disabled={blocks.length === 1}
+                            className="p-1.5 text-red-400 hover:bg-red-500/10 rounded-lg disabled:opacity-30 disabled:hover:bg-transparent transition-colors ml-2">
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-400">Sub Title (Opsional)</label>
+                          <Input value={block.subtitle} onChange={(e) => updateBlock(block.id, { subtitle: e.target.value })} placeholder="Judul sub-bagian..."
+                            className="bg-black/20 border-white/10 text-white placeholder:text-slate-500 rounded-lg h-10" />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-400">Gambar Blok (Opsional)</label>
+                          <ImageUploader value={block.image} onChange={(url) => updateBlock(block.id, { image: url })} onRemove={() => updateBlock(block.id, { image: "" })} />
+                        </div>
+
+                        {block.image && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-slate-400">Alt Text Gambar</label>
+                              <Input value={block.imageAlt} onChange={(e) => updateBlock(block.id, { imageAlt: e.target.value })} placeholder="Deskripsi gambar..."
+                                className="bg-black/20 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                            </div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-slate-400">Caption Gambar</label>
+                              <Input value={block.imageCaption} onChange={(e) => updateBlock(block.id, { imageCaption: e.target.value })} placeholder="Sumber: Dokumentasi Pribadi"
+                                className="bg-black/20 border-white/10 text-white placeholder:text-slate-500 rounded-lg" />
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-slate-400">Deskripsi</label>
+                          <RichTextEditor content={block.description} onChange={(content) => updateBlock(block.id, { description: content })} />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  <Button type="button" variant="outline" onClick={addBlock}
+                    className="w-full border-dashed border-white/20 bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white rounded-xl h-12">
+                    <Plus className="w-5 h-5 mr-2" /> Tambah Blok Konten
+                  </Button>
+                </div>
               </TabsContent>
 
               {/* SEO */}

@@ -13,6 +13,15 @@ import ShareButtons from "@/components/public/ShareButtons";
 import ReadingProgressBar from "@/components/public/ReadingProgressBar";
 import ViewCounter from "@/components/public/ViewCounter";
 
+type ArticleBlock = {
+  id: string;
+  subtitle: string;
+  image: string;
+  imageAlt: string;
+  imageCaption: string;
+  description: string;
+};
+
 export const revalidate = 3600;
 
 export async function generateStaticParams() {
@@ -84,8 +93,38 @@ export default async function ArticleDetailPage({
 
   if (!article) notFound();
 
-  const toc = generateTableOfContents(article.content);
-  const contentWithIds = addHeadingIds(article.content);
+  let blocks: ArticleBlock[] | null = null;
+  try {
+    const parsed = JSON.parse(article.content);
+    if (Array.isArray(parsed)) {
+      blocks = parsed;
+    }
+  } catch {
+    // Legacy HTML
+  }
+
+  let renderedContent = article.content;
+  if (blocks) {
+    renderedContent = blocks.map(block => {
+      let blockHtml = "";
+      if (block.subtitle) {
+        blockHtml += `<h2>${block.subtitle}</h2>`;
+      }
+      if (block.image) {
+        blockHtml += `<figure class="my-8">
+          <img src="${block.image}" alt="${block.imageAlt || block.subtitle || 'Gambar artikel'}" class="w-full rounded-2xl object-cover" />
+          ${block.imageCaption ? `<figcaption class="text-left text-sm text-gray-500 mt-3">${block.imageCaption}</figcaption>` : ''}
+        </figure>`;
+      }
+      if (block.description) {
+        blockHtml += `<div>${block.description}</div>`;
+      }
+      return blockHtml;
+    }).join("\n<hr class='my-10 border-gray-100 border-dashed' />\n");
+  }
+
+  const toc = generateTableOfContents(renderedContent);
+  const contentWithIds = addHeadingIds(renderedContent);
 
   // Related articles
   const relatedArticles = await prisma.article.findMany({
@@ -125,7 +164,7 @@ export default async function ArticleDetailPage({
       "@type": "WebPage",
       "@id": `${BASE_URL}/artikel/${article.slug}`,
     },
-    wordCount: article.content.replace(/<[^>]*>/g, "").split(/\s+/).length,
+    wordCount: renderedContent.replace(/<[^>]*>/g, "").split(/\s+/).filter(Boolean).length,
   };
 
   const breadcrumbJsonLd = {
@@ -274,15 +313,22 @@ export default async function ArticleDetailPage({
 
         {/* Featured Image */}
         {article.featuredImage && (
-          <div className="relative w-full h-64 md:h-96 lg:h-[500px] rounded-2xl overflow-hidden mb-10">
-            <Image
-              src={article.featuredImage}
-              alt={article.featuredImageAlt || article.title}
-              fill
-              className="object-cover"
-              priority
-            />
-          </div>
+          <figure className="mb-10">
+            <div className="relative w-full h-64 md:h-96 lg:h-[500px] rounded-2xl overflow-hidden">
+              <Image
+                src={article.featuredImage}
+                alt={article.featuredImageAlt || article.title}
+                fill
+                className="object-cover"
+                priority
+              />
+            </div>
+            {article.featuredImageCaption && (
+              <figcaption className="text-left text-sm text-gray-500 mt-3">
+                {article.featuredImageCaption}
+              </figcaption>
+            )}
+          </figure>
         )}
 
         <div className="flex gap-10">
