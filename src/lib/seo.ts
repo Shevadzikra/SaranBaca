@@ -4,7 +4,7 @@ export const SITE_NAME = "SaranBaca";
 export const SITE_DESCRIPTION =
   "Temukan artikel terbaik dan rekomendasi bacaan berkualitas di SaranBaca";
 export const BASE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL || "https://saranbaca.vercel.app";
+  process.env.NEXT_PUBLIC_SITE_URL || "https://www.saranbaca.com";
 
 export function generateArticleMetadata({
   title,
