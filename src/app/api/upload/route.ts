@@ -14,6 +14,8 @@ export async function POST(request: Request) {
     const formData = await request.formData();
     const file = formData.get("file") as File | null;
     const folder = (formData.get("folder") as string) || "saranbaca";
+    const alt = formData.get("alt") as string | null;
+    const caption = formData.get("caption") as string | null;
 
     if (!file) {
       return NextResponse.json(
@@ -28,7 +30,11 @@ export async function POST(request: Request) {
     const base64 = buffer.toString("base64");
     const dataURI = `data:${file.type};base64,${base64}`;
 
-    const result = await uploadImage(dataURI, folder);
+    const context: any = {};
+    if (alt) context.alt = alt;
+    if (caption) context.caption = caption;
+
+    const result = await uploadImage(dataURI, folder, Object.keys(context).length > 0 ? context : undefined);
 
     return NextResponse.json(result);
   } catch (error) {
