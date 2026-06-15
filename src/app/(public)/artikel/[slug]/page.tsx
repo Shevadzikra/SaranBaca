@@ -393,16 +393,65 @@ export default async function ArticleDetailPage({
                         <div dangerouslySetInnerHTML={{ __html: addHeadingIds(block.description) }} />
                       )}
                       
+                      {/* Table of Contents - Mobile (Below Block #1) */}
+                      {index === 0 && toc.length > 0 && (
+                        <div className="lg:hidden my-8 p-6 bg-green-50/50 rounded-2xl border border-emerald-100/50">
+                          <p className="text-lg font-semibold text-gray-900 mb-4 uppercase tracking-wider flex items-center gap-2">
+                            Daftar Isi
+                          </p>
+                          <nav className="space-y-2.5 border-l-2 border-emerald-200/60 pl-4">
+                            {toc.map((item) => (
+                              <a
+                                key={item.id}
+                                href={`#${item.id}`}
+                                className={`block text-sm no-underline decoration-transparent transition-colors hover:text-emerald-600 ${
+                                  item.level === 3
+                                    ? "pl-4 text-gray-500"
+                                    : "text-gray-800 font-medium"
+                                }`}
+                              >
+                                {item.text}
+                              </a>
+                            ))}
+                          </nav>
+                        </div>
+                      )}
+                      
                       {index < blocks.length - 1 && <hr className="my-10 border-gray-100 border-dashed" />}
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <div
-                className="prose-article"
-                dangerouslySetInnerHTML={{ __html: contentWithIds }}
-              />
+              <>
+                {/* Table of Contents - Mobile (Legacy HTML) */}
+                {toc.length > 0 && (
+                  <div className="lg:hidden mb-10 p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
+                    <h4 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider flex items-center gap-2">
+                      Daftar Isi
+                    </h4>
+                    <nav className="space-y-2.5 border-l-2 border-emerald-200/60 pl-4">
+                      {toc.map((item) => (
+                        <a
+                          key={item.id}
+                          href={`#${item.id}`}
+                          className={`block text-sm no-underline transition-colors hover:text-emerald-600 ${
+                            item.level === 3
+                              ? "pl-4 text-gray-500"
+                              : "text-gray-800 font-medium"
+                          }`}
+                        >
+                          {item.text}
+                        </a>
+                      ))}
+                    </nav>
+                  </div>
+                )}
+                <div
+                  className="prose-article"
+                  dangerouslySetInnerHTML={{ __html: contentWithIds }}
+                />
+              </>
             )}
 
             {/* FAQ Section */}
