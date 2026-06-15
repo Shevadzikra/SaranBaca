@@ -337,9 +337,9 @@ export default async function ArticleDetailPage({
           {toc.length > 0 && (
             <aside className="hidden lg:block w-64 shrink-0">
               <div className="sticky top-24">
-                <h4 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">
+                <h1 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider">
                   Daftar Isi
-                </h4>
+                </h1>
                 <nav className="space-y-2 border-l-2 border-gray-100 pl-4">
                   {toc.map((item) => (
                     <a
@@ -427,9 +427,9 @@ export default async function ArticleDetailPage({
                 {/* Table of Contents - Mobile (Legacy HTML) */}
                 {toc.length > 0 && (
                   <div className="lg:hidden mb-10 p-6 bg-emerald-50/50 rounded-2xl border border-emerald-100/50">
-                    <h4 className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider flex items-center gap-2">
+                    <p className="text-sm font-semibold text-gray-900 mb-4 uppercase tracking-wider flex items-center gap-2">
                       Daftar Isi
-                    </h4>
+                    </p>
                     <nav className="space-y-2.5 border-l-2 border-emerald-200/60 pl-4">
                       {toc.map((item) => (
                         <a
