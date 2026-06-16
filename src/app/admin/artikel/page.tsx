@@ -135,7 +135,7 @@ export default function ArtikelListPage() {
             <Button
               type="submit"
               variant="outline"
-              className="border-white/10 text-slate-300 hover:bg-white/10 rounded-xl"
+              className="border-white/10 text-slate-500 hover:bg-white/10 hover:text-white rounded-xl"
             >
               <Filter className="w-4 h-4" />
             </Button>
