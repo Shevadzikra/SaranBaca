@@ -24,7 +24,7 @@ export async function generateMetadata({
   if (!category) return { title: "Kategori Tidak Ditemukan" };
 
   return {
-    title: category.metaTitle || `${category.name} — ${SITE_NAME}`,
+    title: category.metaTitle || `${category.name}`,
     description: category.metaDescription || category.description || `Artikel tentang ${category.name} di ${SITE_NAME}`,
     openGraph: {
       title: `${category.name} — ${SITE_NAME}`,

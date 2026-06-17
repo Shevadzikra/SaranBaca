@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: `Syarat dan Ketentuan (Terms of Service) — ${SITE_NAME}`,
+  title: `Syarat dan Ketentuan (Terms of Service)`,
   description: `Syarat dan ketentuan penggunaan situs web ${SITE_NAME}.`,
 };
 

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: `Kebijakan Privasi (Privacy Policy) — ${SITE_NAME}`,
+  title: `Kebijakan Privasi (Privacy Policy)`,
   description: `Kebijakan privasi dan perlindungan data pengunjung di ${SITE_NAME}.`,
 };
 

@@ -3,7 +3,7 @@ import { SITE_NAME } from "@/lib/seo";
 import { Mail, MapPin, Phone } from "lucide-react";
 
 export const metadata: Metadata = {
-  title: `Hubungi Kami — ${SITE_NAME}`,
+  title: `Hubungi Kami`,
   description: `Hubungi tim ${SITE_NAME} untuk pertanyaan, kerja sama, atau masukan.`,
 };
 

@@ -25,7 +25,7 @@ export async function generateMetadata({
   if (!author) return { title: "Author Tidak Ditemukan" };
 
   return {
-    title: author.metaTitle || `${author.name} — ${SITE_NAME}`,
+    title: author.metaTitle || `${author.name}`,
     description: author.metaDescription || author.bio || `Profil penulis ${author.name} di ${SITE_NAME}`,
     openGraph: {
       title: `${author.name} — ${SITE_NAME}`,

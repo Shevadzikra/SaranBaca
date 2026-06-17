@@ -13,7 +13,7 @@ import {
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: `Tentang Kami — ${SITE_NAME}`,
+  title: `Tentang Kami`,
   description: `Pelajari lebih lanjut tentang misi, visi, dan tim di balik ${SITE_NAME}.`,
 };
 

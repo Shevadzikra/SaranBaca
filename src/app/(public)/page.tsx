@@ -6,7 +6,7 @@ import { BookOpen, TrendingUp, ArrowRight } from "lucide-react";
 import { SITE_NAME, SITE_DESCRIPTION, BASE_URL } from "@/lib/seo";
 
 export const metadata: Metadata = {
-  title: `${SITE_NAME} — Rekomendasi Bacaan Berkualitas`,
+  title: `Rekomendasi Bacaan Berkualitas`,
   description: SITE_DESCRIPTION,
   metadataBase: new URL(BASE_URL),
   openGraph: {
