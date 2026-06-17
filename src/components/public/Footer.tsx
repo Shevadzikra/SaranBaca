@@ -20,9 +20,14 @@ export default function Footer() {
                   className="w-6 h-6"
                 />
               </div>
-              <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                SaranBaca
-              </span>
+              <div>
+                <span className="text-xl font-bold bg-gradient-to-r text-slate-900 bg-clip-text">
+                  Saran
+                </span>
+                <span className="text-xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  Baca
+                </span>
+              </div>
             </Link>
             <p className="text-gray-500 text-sm leading-relaxed max-w-md">
               Temukan artikel terbaik dan rekomendasi bacaan berkualitas. 
