@@ -22,6 +22,9 @@ export const metadata: Metadata = {
   verification: {
     google: "5aIAW2c6mcX-W8JPqSUQ_IGte85gz8KWwQ3HBVAabEE",
   },
+  other: {
+    "google-adsense-account": "ca-pub-4264146873118513",
+  },
   title: {
     default: `${SITE_NAME} — Rekomendasi Bacaan Berkualitas`,
     template: `%s — ${SITE_NAME}`,
