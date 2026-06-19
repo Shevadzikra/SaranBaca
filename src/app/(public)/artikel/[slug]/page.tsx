@@ -430,8 +430,9 @@ export default async function ArticleDetailPage({
                       {block.sections ? (
                         block.sections.map((section) => {
                           if (section.type === "paragraph" && section.content) {
+                            const hasHeadings = /<h[23][\s>]/i.test(section.content);
                             return (
-                              <div key={section.id} dangerouslySetInnerHTML={{ __html: addHeadingIds(section.content) }} />
+                              <div key={section.id} dangerouslySetInnerHTML={{ __html: hasHeadings ? addHeadingIds(section.content) : section.content }} />
                             );
                           }
                           if (section.type === "related_article" && section.articleSlug) {
