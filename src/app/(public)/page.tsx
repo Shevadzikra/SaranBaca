@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import prisma from "@/lib/prisma";
 import ArticleCard from "@/components/public/ArticleCard";
+import SearchBar from "@/components/public/SearchBar";
 import Link from "next/link";
 import { BookOpen, TrendingUp, ArrowRight } from "lucide-react";
 import { SITE_NAME, SITE_DESCRIPTION, BASE_URL } from "@/lib/seo";
@@ -66,6 +67,7 @@ export default async function HomePage() {
         <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
           {SITE_DESCRIPTION}
         </p>
+        <SearchBar />
       </section>
 
       {/* Categories Quick Filter */}
