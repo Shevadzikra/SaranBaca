@@ -496,9 +496,9 @@ export default async function ArticleDetailPage({
 
             {/* Share */}
             <div className="mt-8 pt-8 border-t border-gray-100">
-              <h4 className="text-sm font-semibold text-gray-900 mb-4">
+              <p className="text-sm font-semibold text-gray-900 mb-4">
                 Bagikan Artikel
-              </h4>
+              </p>
               <ShareButtons
                 url={`${BASE_URL}/artikel/${article.slug}`}
                 title={article.title}
