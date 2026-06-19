@@ -847,7 +847,7 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
               {saving ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Menyimpan...</>
               ) : (
-                <><Save className="w-4 h-4 mr-2" /> {mode === "create" ? "Simpan Artikel" : "Update Artikel"}</>
+                <><Save className="w-4 h-4 mr-2" /> {mode === "create" ? "Simpan Artikel" : "Perbarui Artikel"}</>
               )}
             </Button>
           </div>
