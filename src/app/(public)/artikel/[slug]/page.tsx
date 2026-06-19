@@ -13,13 +13,30 @@ import ShareButtons from "@/components/public/ShareButtons";
 import ReadingProgressBar from "@/components/public/ReadingProgressBar";
 import ViewCounter from "@/components/public/ViewCounter";
 
+type ParagraphSection = {
+  type: "paragraph";
+  id: string;
+  content: string;
+};
+
+type RelatedArticleSection = {
+  type: "related_article";
+  id: string;
+  label: string;
+  articleSlug: string;
+  articleTitle: string;
+};
+
+type BlockSection = ParagraphSection | RelatedArticleSection;
+
 type ArticleBlock = {
   id: string;
   subtitle: string;
   image: string;
   imageAlt: string;
   imageCaption: string;
-  description: string;
+  description?: string;
+  sections?: BlockSection[];
 };
 
 export const revalidate = 3600;
@@ -93,16 +110,29 @@ export default async function ArticleDetailPage({
 
   if (!article) notFound();
 
+  // Parse blocks with sections support
   let blocks: ArticleBlock[] | null = null;
   try {
     const parsed = JSON.parse(article.content);
     if (Array.isArray(parsed)) {
-      blocks = parsed;
+      // Migrate old blocks: if a block has `description` but no `sections`, convert
+      blocks = parsed.map((block: Record<string, unknown>) => {
+        if (Array.isArray(block.sections) && (block.sections as unknown[]).length > 0) {
+          return block as unknown as ArticleBlock;
+        }
+        // Legacy block with single description
+        const description = (block.description as string) || "";
+        return {
+          ...block,
+          sections: [{ type: "paragraph" as const, id: crypto.randomUUID(), content: description }],
+        } as ArticleBlock;
+      });
     }
   } catch {
     // Legacy HTML
   }
 
+  // Build rendered content for TOC and word count
   let renderedContent = article.content;
   if (blocks) {
     renderedContent = blocks.map(block => {
@@ -116,7 +146,15 @@ export default async function ArticleDetailPage({
           ${block.imageCaption ? `<figcaption class="text-left text-sm text-gray-500 mt-3">${block.imageCaption}</figcaption>` : ''}
         </figure>`;
       }
-      if (block.description) {
+      if (block.sections) {
+        for (const section of block.sections) {
+          if (section.type === "paragraph" && section.content) {
+            blockHtml += `<div>${section.content}</div>`;
+          } else if (section.type === "related_article" && section.articleSlug) {
+            blockHtml += `<div><p><strong>${section.label || "Baca juga:"}</strong></p><a href="/artikel/${section.articleSlug}">${section.articleTitle}</a></div>`;
+          }
+        }
+      } else if (block.description) {
         blockHtml += `<div>${block.description}</div>`;
       }
       return blockHtml;
@@ -389,9 +427,33 @@ export default async function ArticleDetailPage({
                         </figure>
                       )}
                       
-                      {block.description && (
+                      {block.sections ? (
+                        block.sections.map((section) => {
+                          if (section.type === "paragraph" && section.content) {
+                            return (
+                              <div key={section.id} dangerouslySetInnerHTML={{ __html: addHeadingIds(section.content) }} />
+                            );
+                          }
+                          if (section.type === "related_article" && section.articleSlug) {
+                            return (
+                              <div key={section.id} className="my-6 p-4 bg-emerald-50/60 border-l-4 border-emerald-500 rounded-r-xl">
+                                <p className="text-sm font-semibold text-gray-700 mb-1">
+                                  {section.label || "Baca juga:"}
+                                </p>
+                                <Link
+                                  href={`/artikel/${section.articleSlug}`}
+                                  className="text-emerald-600 font-medium hover:text-emerald-700 underline underline-offset-2 transition-colors"
+                                >
+                                  {section.articleTitle}
+                                </Link>
+                              </div>
+                            );
+                          }
+                          return null;
+                        })
+                      ) : block.description ? (
                         <div dangerouslySetInnerHTML={{ __html: addHeadingIds(block.description) }} />
-                      )}
+                      ) : null}
                       
                       {/* Table of Contents - Mobile (Below Block #1) */}
                       {index === 0 && toc.length > 0 && (
