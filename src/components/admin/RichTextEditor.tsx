@@ -35,9 +35,11 @@ export default function RichTextEditor({
   onImageUpload,
 }: RichTextEditorProps) {
   const editor = useEditor({
+    immediatelyRender: true,
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
+        link: false,
       }),
       Link.configure({
         openOnClick: false,
