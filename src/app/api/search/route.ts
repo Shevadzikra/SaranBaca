@@ -22,6 +22,7 @@ export async function GET(request: Request) {
       ],
     },
     select: {
+      id: true,
       slug: true,
       title: true,
       excerpt: true,

@@ -82,10 +82,16 @@ export async function PUT(
           set: [],
           connect: body.tagIds?.map((tagId: string) => ({ id: tagId })) || [],
         },
+        // Related Articles — disconnect all then reconnect
+        relatedTo: {
+          set: [],
+          connect: body.relatedArticleIds?.map((id: string) => ({ id })) || [],
+        },
       },
       include: {
         category: true,
         tags: true,
+        relatedTo: { select: { id: true, title: true, slug: true } },
         author: { select: { id: true, name: true, slug: true } },
       },
     });

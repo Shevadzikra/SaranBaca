@@ -96,10 +96,15 @@ export async function POST(request: Request) {
         tags: body.tagIds?.length
           ? { connect: body.tagIds.map((id: string) => ({ id })) }
           : undefined,
+        // Related Articles (manual)
+        relatedTo: body.relatedArticleIds?.length
+          ? { connect: body.relatedArticleIds.map((id: string) => ({ id })) }
+          : undefined,
       },
       include: {
         category: true,
         tags: true,
+        relatedTo: { select: { id: true, title: true, slug: true } },
         author: { select: { id: true, name: true, slug: true } },
       },
     });

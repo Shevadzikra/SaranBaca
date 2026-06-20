@@ -14,6 +14,7 @@ export default async function EditArtikelPage({
     include: {
       tags: true,
       faqs: { orderBy: { order: "asc" } },
+      relatedTo: { select: { id: true, title: true, slug: true } },
     },
   });
 
@@ -48,6 +49,12 @@ export default async function EditArtikelPage({
           faqs: article.faqs.map((f) => ({
             question: f.question,
             answer: f.answer,
+          })),
+          relatedArticleIds: article.relatedTo.map((a) => a.id),
+          relatedArticles: article.relatedTo.map((a) => ({
+            id: a.id,
+            title: a.title,
+            slug: a.slug,
           })),
         }}
       />

@@ -73,6 +73,8 @@ interface ArticleFormProps {
     focusKeyword?: string | null;
     schemaType?: string | null;
     faqs?: { question: string; answer: string }[];
+    relatedArticleIds?: string[];
+    relatedArticles?: { id: string; title: string; slug: string }[];
   };
   mode: "create" | "edit";
 }
@@ -232,6 +234,11 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
   // FAQ
   const [faqs, setFaqs] = useState<{ question: string; answer: string }[]>(initialData?.faqs || []);
 
+  // Related Articles (manual)
+  const [relatedArticles, setRelatedArticles] = useState<{ id: string; title: string; slug: string }[]>(
+    initialData?.relatedArticles || []
+  );
+
   // Data
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
@@ -340,6 +347,7 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
       status,
       categoryId: categoryId || null,
       tagIds: selectedTagIds,
+      relatedArticleIds: relatedArticles.map(a => a.id),
       metaTitle: metaTitle || null,
       metaDescription: metaDescription || null,
       canonicalUrl: canonicalUrl || null,
@@ -886,6 +894,66 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                 </div>
               ))}
             </div>
+            </div>
+
+          {/* Related Articles Picker */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-white">Artikel Terkait</h3>
+              <span className="text-xs text-slate-500">{relatedArticles.length}/6</span>
+            </div>
+            <p className="text-xs text-slate-500">
+              Pilih artikel yang ditampilkan di bagian bawah. Jika kosong, sistem akan memilih otomatis berdasarkan kategori dan tag.
+            </p>
+
+            {/* Search */}
+            {relatedArticles.length < 6 && (
+              <RelatedArticleSearch
+                currentSlug={articleSlug}
+                onSelect={(slug, title) => {
+                  // Need to find the article ID - fetch it
+                  fetch(`/api/search?q=${encodeURIComponent(title)}`)
+                    .then(r => r.json())
+                    .then(data => {
+                      const found = (data.articles || []).find(
+                        (a: { slug: string; id: string; title: string }) => a.slug === slug
+                      );
+                      if (found && !relatedArticles.some(ra => ra.id === found.id)) {
+                        setRelatedArticles(prev => [...prev, { id: found.id, title: found.title, slug: found.slug }]);
+                      }
+                    });
+                }}
+              />
+            )}
+
+            {/* Selected Articles */}
+            {relatedArticles.length > 0 && (
+              <div className="space-y-2">
+                {relatedArticles.map((article, i) => (
+                  <div
+                    key={article.id}
+                    className="flex items-center gap-2 p-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20"
+                  >
+                    <span className="text-xs font-mono text-slate-500 w-5 text-center shrink-0">{i + 1}</span>
+                    <BookOpen className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                    <span className="text-sm text-emerald-300 flex-1 truncate">{article.title}</span>
+                    <button
+                      type="button"
+                      onClick={() => setRelatedArticles(prev => prev.filter(a => a.id !== article.id))}
+                      className="p-1 text-red-400/60 hover:text-red-400 rounded transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {relatedArticles.length === 0 && (
+              <div className="text-center py-4 text-slate-600 text-xs">
+                Belum ada artikel terkait dipilih. Sistem akan menggunakan pemilihan otomatis.
+              </div>
+            )}
           </div>
         </div>
       </div>

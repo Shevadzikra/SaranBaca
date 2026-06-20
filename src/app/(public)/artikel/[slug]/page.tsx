@@ -105,6 +105,11 @@ export default async function ArticleDetailPage({
         },
       },
       faqs: { orderBy: { order: "asc" } },
+      relatedTo: {
+        where: { status: "PUBLISHED" },
+        include: { category: true },
+        take: 6,
+      },
     },
   });
 
@@ -164,20 +169,25 @@ export default async function ArticleDetailPage({
   const toc = generateTableOfContents(renderedContent);
   const contentWithIds = addHeadingIds(renderedContent);
 
-  // Related articles
-  const relatedArticles = await prisma.article.findMany({
-    where: {
-      status: "PUBLISHED",
-      id: { not: article.id },
-      OR: [
-        { categoryId: article.categoryId || undefined },
-        { tags: { some: { id: { in: article.tags.map((t) => t.id) } } } },
-      ],
-    },
-    include: { category: true },
-    orderBy: { publishedAt: "desc" },
-    take: 3,
-  });
+  // Related articles: use manual picks if available, otherwise auto-detect
+  let relatedArticles;
+  if (article.relatedTo.length > 0) {
+    relatedArticles = article.relatedTo;
+  } else {
+    relatedArticles = await prisma.article.findMany({
+      where: {
+        status: "PUBLISHED",
+        id: { not: article.id },
+        OR: [
+          { categoryId: article.categoryId || undefined },
+          { tags: { some: { id: { in: article.tags.map((t) => t.id) } } } },
+        ],
+      },
+      include: { category: true },
+      orderBy: { publishedAt: "desc" },
+      take: 3,
+    });
+  }
 
   // JSON-LD Structured Data
   const articleJsonLd = {
