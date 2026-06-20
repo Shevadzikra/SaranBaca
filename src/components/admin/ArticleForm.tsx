@@ -19,6 +19,7 @@ import {
 import { Save, Loader2, Plus, Trash2, Globe, Search, CheckCircle2, AlertTriangle, ArrowUp, ArrowDown, Link2, Type, BookOpen } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import ImageUploader from "./ImageUploader";
+import ArticlePreview from "./ArticlePreview";
 import slugify from "slugify";
 
 // --- Types ---
@@ -850,6 +851,20 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                 <><Save className="w-4 h-4 mr-2" /> {mode === "create" ? "Simpan Artikel" : "Perbarui Artikel"}</>
               )}
             </Button>
+
+            {/* Preview Button */}
+            <ArticlePreview
+              title={title}
+              slug={articleSlug}
+              excerpt={excerpt}
+              featuredImage={featuredImage}
+              featuredImageAlt={featuredImageAlt}
+              featuredImageCaption={featuredImageCaption}
+              blocks={blocks}
+              categoryName={categories.find(c => c.id === categoryId)?.name}
+              tagNames={tags.filter(t => selectedTagIds.includes(t.id)).map(t => t.name)}
+              faqs={faqs}
+            />
           </div>
 
           {/* SEO Checklist */}
