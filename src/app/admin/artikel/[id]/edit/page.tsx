@@ -35,6 +35,7 @@ export default async function EditArtikelPage({
           content: article.content,
           featuredImage: article.featuredImage,
           featuredImageAlt: article.featuredImageAlt,
+          featuredImageCaption: article.featuredImageCaption,
           status: article.status,
           categoryId: article.categoryId,
           tagIds: article.tags.map((t) => t.id),
