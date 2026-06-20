@@ -80,6 +80,10 @@ model Article {
   authorId   String
   faqs       FAQ[]
 
+  // Related Articles (manual pick by admin)
+  relatedTo   Article[] @relation("RelatedArticles")
+  relatedFrom Article[] @relation("RelatedArticles")
+
   // Statistik
   viewCount   Int @default(0)
   readingTime Int?
