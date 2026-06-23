@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -121,6 +122,13 @@ export async function POST(request: Request) {
           })
         ),
       });
+    }
+
+    // Revalidate sitemap and public pages when article is created
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/");
+    if (body.status === "PUBLISHED") {
+      revalidatePath(`/artikel/${article.slug}`);
     }
 
     return NextResponse.json(article, { status: 201 });

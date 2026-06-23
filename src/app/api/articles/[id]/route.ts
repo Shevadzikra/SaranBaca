@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
@@ -111,6 +112,11 @@ export async function PUT(
       });
     }
 
+    // Revalidate sitemap and public pages when article is updated
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/");
+    revalidatePath(`/artikel/${article.slug}`);
+
     return NextResponse.json(article);
   } catch (error) {
     console.error("Update article error:", error);
@@ -135,6 +141,11 @@ export async function DELETE(
 
   try {
     await prisma.article.delete({ where: { id } });
+
+    // Revalidate sitemap and homepage when article is deleted
+    revalidatePath("/sitemap.xml");
+    revalidatePath("/");
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete article error:", error);
