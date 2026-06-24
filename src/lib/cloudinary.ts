@@ -14,9 +14,6 @@ export async function uploadImage(
   const uploadOptions: any = {
     folder,
     resource_type: "image",
-    transformation: [
-      { quality: "auto", fetch_format: "auto" },
-    ],
   };
 
   // Add context if provided
