@@ -6,8 +6,14 @@ import { slugify } from "@/lib/slugify";
 
 export async function GET() {
   const tags = await prisma.tag.findMany({
-    include: { _count: { select: { articles: true } } },
-    orderBy: { name: "asc" },
+    include: {
+      _count: { select: { articles: true } },
+      tagGroup: { select: { id: true, name: true, slug: true } },
+    },
+    orderBy: [
+      { tagGroup: { order: "asc" } },
+      { name: "asc" },
+    ],
   });
 
   return NextResponse.json(tags);
@@ -27,6 +33,7 @@ export async function POST(request: Request) {
       data: {
         name: body.name,
         slug: body.slug || slugify(body.name),
+        tagGroupId: body.tagGroupId || null,
       },
     });
 

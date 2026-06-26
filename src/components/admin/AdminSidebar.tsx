@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   FileText,
   FolderOpen,
+  Tags,
   ImageIcon,
   UserCircle,
   LogOut,
@@ -34,6 +35,11 @@ const navItems = [
     label: "Kategori",
     href: "/admin/kategori",
     icon: FolderOpen,
+  },
+  {
+    label: "Tag",
+    href: "/admin/tag",
+    icon: Tags,
   },
   {
     label: "Media",

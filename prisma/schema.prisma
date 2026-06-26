@@ -102,11 +102,25 @@ model Category {
   updatedAt DateTime @updatedAt
 }
 
+model TagGroup {
+  id    String @id @default(cuid())
+  name  String @unique
+  slug  String @unique
+  order Int    @default(0)
+  tags  Tag[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Tag {
   id       String    @id @default(cuid())
   name     String    @unique
   slug     String    @unique
   articles Article[] @relation("ArticleToTag")
+
+  tagGroupId String?
+  tagGroup   TagGroup? @relation(fields: [tagGroupId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

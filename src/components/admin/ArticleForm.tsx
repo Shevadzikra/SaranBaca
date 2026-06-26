@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Save, Loader2, Plus, Trash2, Globe, Search, CheckCircle2, AlertTriangle, ArrowUp, ArrowDown, Link2, Type, BookOpen } from "lucide-react";
+import { Save, Loader2, Plus, Trash2, Globe, Search, CheckCircle2, AlertTriangle, ArrowUp, ArrowDown, Link2, Type, BookOpen, Tags, ChevronDown, ChevronRight } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
 import ImageUploader from "./ImageUploader";
 import ArticlePreview from "./ArticlePreview";
@@ -241,12 +241,49 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
 
   // Data
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
-  const [tags, setTags] = useState<{ id: string; name: string }[]>([]);
+  const [tags, setTags] = useState<{ id: string; name: string; tagGroup?: { id: string; name: string; slug: string } | null }[]>([]);
+
+  // Tag tab state
+  const [tagSearch, setTagSearch] = useState("");
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     fetch("/api/categories").then((r) => r.json()).then(setCategories);
     fetch("/api/tags").then((r) => r.json()).then(setTags);
   }, []);
+
+  // Group tags by tagGroup for the Tag tab
+  const groupedTags = tags.reduce<Record<string, { groupName: string; groupSlug: string; tags: typeof tags }>>((acc, tag) => {
+    const groupName = tag.tagGroup?.name || "Tanpa Grup";
+    const groupSlug = tag.tagGroup?.slug || "_ungrouped";
+    if (!acc[groupSlug]) {
+      acc[groupSlug] = { groupName, groupSlug, tags: [] };
+    }
+    acc[groupSlug].tags.push(tag);
+    return acc;
+  }, {});
+
+  // Sort groups: named groups first (alphabetically), Misc last, ungrouped at very end
+  const sortedGroupKeys = Object.keys(groupedTags).sort((a, b) => {
+    if (a === "_ungrouped") return 1;
+    if (b === "_ungrouped") return -1;
+    if (a === "misc") return 1;
+    if (b === "misc") return -1;
+    return groupedTags[a].groupName.localeCompare(groupedTags[b].groupName);
+  });
+
+  // Filter tags by search
+  const filteredGroupKeys = tagSearch.trim()
+    ? sortedGroupKeys.filter((key) =>
+        groupedTags[key].tags.some((t) =>
+          t.name.toLowerCase().includes(tagSearch.toLowerCase())
+        )
+      )
+    : sortedGroupKeys;
+
+  function toggleGroupCollapse(groupSlug: string) {
+    setCollapsedGroups((prev) => ({ ...prev, [groupSlug]: !prev[groupSlug] }));
+  }
 
   // Auto-slug from title
   useEffect(() => {
@@ -419,6 +456,13 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                 </TabsTrigger>
                 <TabsTrigger value="faq" className="rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
                   FAQ
+                </TabsTrigger>
+                <TabsTrigger value="tag" className="rounded-lg data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400">
+                  Tag {selectedTagIds.length > 0 && (
+                    <span className="ml-1.5 px-1.5 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-semibold">
+                      {selectedTagIds.length}
+                    </span>
+                  )}
                 </TabsTrigger>
               </TabsList>
             </div>
@@ -793,6 +837,125 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                   </div>
                 )}
               </TabsContent>
+
+              {/* TAG */}
+              <TabsContent value="tag" className="space-y-5">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-medium text-slate-300">Pilih Tag</h3>
+                    <p className="text-xs text-slate-500 mt-1">
+                      {selectedTagIds.length} tag dipilih dari {tags.length} total
+                    </p>
+                  </div>
+                </div>
+
+                {/* Search */}
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+                  <Input
+                    value={tagSearch}
+                    onChange={(e) => setTagSearch(e.target.value)}
+                    placeholder="Cari tag..."
+                    className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg pl-9 h-10"
+                  />
+                </div>
+
+                {/* Selected Tags Preview */}
+                {selectedTagIds.length > 0 && (
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-500 uppercase tracking-wider">Tag Terpilih</label>
+                    <div className="flex flex-wrap gap-1.5">
+                      {tags
+                        .filter((t) => selectedTagIds.includes(t.id))
+                        .map((tag) => (
+                          <Badge
+                            key={tag.id}
+                            className="cursor-pointer bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/30 transition-all text-xs"
+                            onClick={() => toggleTag(tag.id)}
+                          >
+                            {tag.name} ×
+                          </Badge>
+                        ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Grouped Tags */}
+                <div className="space-y-3">
+                  {filteredGroupKeys.map((groupSlug) => {
+                    const group = groupedTags[groupSlug];
+                    const isCollapsed = collapsedGroups[groupSlug] ?? false;
+                    const filteredTags = tagSearch.trim()
+                      ? group.tags.filter((t) =>
+                          t.name.toLowerCase().includes(tagSearch.toLowerCase())
+                        )
+                      : group.tags;
+                    const selectedInGroup = filteredTags.filter((t) =>
+                      selectedTagIds.includes(t.id)
+                    ).length;
+
+                    return (
+                      <div
+                        key={groupSlug}
+                        className="bg-white/5 border border-white/10 rounded-xl overflow-hidden"
+                      >
+                        {/* Group Header */}
+                        <button
+                          type="button"
+                          onClick={() => toggleGroupCollapse(groupSlug)}
+                          className="flex items-center justify-between w-full px-4 py-3 hover:bg-white/[0.02] transition-colors text-left"
+                        >
+                          <div className="flex items-center gap-2">
+                            {isCollapsed ? (
+                              <ChevronRight className="w-4 h-4 text-slate-500" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4 text-emerald-400" />
+                            )}
+                            <span className="text-sm font-medium text-white">
+                              {group.groupName}
+                            </span>
+                            <span className="text-[10px] text-slate-600">
+                              {filteredTags.length} tag
+                            </span>
+                          </div>
+                          {selectedInGroup > 0 && (
+                            <span className="px-2 py-0.5 text-[10px] rounded-full bg-emerald-500/20 text-emerald-400 font-semibold">
+                              {selectedInGroup} dipilih
+                            </span>
+                          )}
+                        </button>
+
+                        {/* Tags */}
+                        {!isCollapsed && (
+                          <div className="px-4 pb-3 border-t border-white/5">
+                            <div className="flex flex-wrap gap-1.5 pt-3">
+                              {filteredTags.map((tag) => (
+                                <Badge
+                                  key={tag.id}
+                                  className={`cursor-pointer transition-all text-xs ${
+                                    selectedTagIds.includes(tag.id)
+                                      ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30"
+                                      : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/10"
+                                  }`}
+                                  onClick={() => toggleTag(tag.id)}
+                                >
+                                  {tag.name}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {filteredGroupKeys.length === 0 && tagSearch.trim() && (
+                  <div className="text-center py-8 text-slate-500 text-sm">
+                    Tidak ada tag yang cocok dengan &quot;{tagSearch}&quot;
+                  </div>
+                )}
+              </TabsContent>
             </div>
           </Tabs>
         </div>
@@ -832,23 +995,27 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
               </Select>
             </div>
 
-            {/* Tags */}
-            <div className="space-y-2">
-              <label className="text-sm text-slate-400">Tag</label>
-              <div className="flex flex-wrap gap-1.5">
-                {tags.map((tag) => (
-                  <Badge key={tag.id}
-                    className={`cursor-pointer transition-all text-xs ${
-                      selectedTagIds.includes(tag.id)
-                        ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30"
-                        : "bg-white/5 text-slate-400 border-white/10 hover:bg-white/10"
-                    }`}
-                    onClick={() => toggleTag(tag.id)}>
-                    {tag.name}
-                  </Badge>
-                ))}
+            {/* Tag Summary (link to Tag tab) */}
+            {selectedTagIds.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-sm text-slate-400">Tag ({selectedTagIds.length})</label>
+                <div className="flex flex-wrap gap-1 max-h-20 overflow-hidden">
+                  {tags
+                    .filter((t) => selectedTagIds.includes(t.id))
+                    .slice(0, 8)
+                    .map((tag) => (
+                      <Badge key={tag.id} className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[10px] px-1.5 py-0">
+                        {tag.name}
+                      </Badge>
+                    ))}
+                  {selectedTagIds.length > 8 && (
+                    <Badge className="bg-white/10 text-slate-400 border-white/10 text-[10px] px-1.5 py-0">
+                      +{selectedTagIds.length - 8} lagi
+                    </Badge>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Save Button */}
             <Button type="submit" disabled={saving}
