@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Save, Loader2, Plus, Trash2, Globe, Search, CheckCircle2, AlertTriangle, ArrowUp, ArrowDown, Link2, Type, BookOpen, Tags, ChevronDown, ChevronRight } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
-import ImageUploader from "./ImageUploader";
+import ImageUploader, { type ImageMetadata } from "./ImageUploader";
 import ArticlePreview from "./ArticlePreview";
 import slugify from "slugify";
 
@@ -488,7 +488,11 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                 {/* Featured Image */}
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-300">Gambar Utama (Maksimal 4.5MB)</label>
-                  <ImageUploader value={featuredImage} onChange={setFeaturedImage} onRemove={() => setFeaturedImage("")} />
+                  <ImageUploader value={featuredImage} onChange={(url, metadata) => {
+                    setFeaturedImage(url);
+                    if (metadata?.alt && !featuredImageAlt) setFeaturedImageAlt(metadata.alt);
+                    if (metadata?.caption && !featuredImageCaption) setFeaturedImageCaption(metadata.caption);
+                  }} onRemove={() => setFeaturedImage("")} />
                 </div>
                 {/* Featured Image Alt & Caption */}
                 {featuredImage && (
@@ -553,7 +557,12 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
 
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-slate-400">Gambar Blok (Opsional)</label>
-                          <ImageUploader value={block.image} onChange={(url) => updateBlock(block.id, { image: url })} onRemove={() => updateBlock(block.id, { image: "" })} />
+                          <ImageUploader value={block.image} onChange={(url, metadata) => {
+                            const updates: Partial<ArticleBlock> = { image: url };
+                            if (metadata?.alt && !block.imageAlt) updates.imageAlt = metadata.alt;
+                            if (metadata?.caption && !block.imageCaption) updates.imageCaption = metadata.caption;
+                            updateBlock(block.id, updates);
+                          }} onRemove={() => updateBlock(block.id, { image: "" })} />
                         </div>
 
                         {block.image && (

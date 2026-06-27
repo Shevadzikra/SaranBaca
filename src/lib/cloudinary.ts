@@ -41,6 +41,8 @@ export interface CloudinaryImage {
   height: number;
   bytes: number;
   createdAt: string;
+  tags: string[];
+  displayName?: string;
   context?: {
     custom?: {
       alt?: string;
@@ -60,6 +62,7 @@ export async function getImages(
       prefix: folder,
       max_results: maxResults,
       context: true,
+      tags: true,
     };
     
     if (nextCursor) {
@@ -76,6 +79,8 @@ export async function getImages(
       height: res.height,
       bytes: res.bytes,
       createdAt: res.created_at,
+      tags: res.tags || [],
+      displayName: res.display_name || undefined,
       context: res.context,
     }));
 
@@ -85,6 +90,64 @@ export async function getImages(
     };
   } catch (error) {
     console.error("Error fetching images from Cloudinary:", error);
+    return { images: [] };
+  }
+}
+
+export async function searchImages(
+  query: string,
+  folder: string = "saranbaca",
+  maxResults: number = 30,
+  nextCursor?: string
+): Promise<{ images: CloudinaryImage[]; nextCursor?: string }> {
+  try {
+    // Sanitize query: remove special characters that break Cloudinary search expressions
+    const sanitized = query.replace(/[\\\"\':\(\)\[\]\{\}\*\?\!\&\|\/\~\^]/g, "").trim();
+
+    if (!sanitized) {
+      // If query is empty after sanitization, return all images from folder
+      const fallback = await getImages(folder, maxResults, nextCursor);
+      return fallback;
+    }
+
+    // Build expression: search in display_name, context caption/alt, OR tags
+    // Cloudinary Search API uses `context.caption` (NOT `context.custom.caption`)
+    // `display_name` is the "title" field set via Cloudinary dashboard
+    // The `:` operator does tokenized/partial matching for text fields
+    const expression = `folder:${folder}/* AND (display_name:${sanitized} OR context.caption:${sanitized} OR context.alt:${sanitized} OR tags:${sanitized})`;
+
+    let searchBuilder = cloudinary.search
+      .expression(expression)
+      .with_field("context")
+      .with_field("tags")
+      .sort_by("created_at", "desc")
+      .max_results(maxResults);
+
+    if (nextCursor) {
+      searchBuilder = searchBuilder.next_cursor(nextCursor);
+    }
+
+    const result = await searchBuilder.execute();
+
+    const images: CloudinaryImage[] = (result.resources || []).map((res: any) => ({
+      url: res.secure_url,
+      publicId: res.public_id,
+      format: res.format,
+      width: res.width,
+      height: res.height,
+      bytes: res.bytes,
+      createdAt: res.created_at,
+      tags: res.tags || [],
+      displayName: res.display_name || undefined,
+      context: res.context,
+    }));
+
+    return {
+      images,
+      nextCursor: result.next_cursor,
+    };
+  } catch (error) {
+    console.error("Error searching images from Cloudinary:", error);
     return { images: [] };
   }
 }

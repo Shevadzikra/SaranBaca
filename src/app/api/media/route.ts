@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getImages, deleteImage, updateImageContext } from "@/lib/cloudinary";
+import { getImages, searchImages, deleteImage, updateImageContext } from "@/lib/cloudinary";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -13,9 +13,12 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const folder = searchParams.get("folder") || "saranbaca";
   const nextCursor = searchParams.get("nextCursor") || undefined;
+  const search = searchParams.get("search") || undefined;
   
   try {
-    const data = await getImages(folder, 10, nextCursor);
+    const data = search
+      ? await searchImages(search, folder, 30, nextCursor)
+      : await getImages(folder, 10, nextCursor);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Failed to fetch media:", error);

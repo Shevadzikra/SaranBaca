@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import { Upload, X, Loader2, ImageIcon, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface CloudinaryImage {
   url: string;
@@ -11,6 +12,8 @@ interface CloudinaryImage {
   format: string;
   width: number;
   height: number;
+  tags: string[];
+  displayName?: string;
   context?: {
     custom?: {
       alt?: string;
@@ -19,9 +22,14 @@ interface CloudinaryImage {
   };
 }
 
+export interface ImageMetadata {
+  alt?: string;
+  caption?: string;
+}
+
 interface ImageUploaderProps {
   value?: string | null;
-  onChange: (url: string) => void;
+  onChange: (url: string, metadata?: ImageMetadata) => void;
   onRemove?: () => void;
 }
 
@@ -38,10 +46,19 @@ export default function ImageUploader({
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
 
-  const fetchMedia = useCallback(async () => {
+  // Search state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  const fetchMedia = useCallback(async (search?: string) => {
     setLoadingMedia(true);
     try {
-      const res = await fetch("/api/media?folder=saranbaca");
+      let url = "/api/media?folder=saranbaca";
+      if (search && search.trim()) {
+        url += `&search=${encodeURIComponent(search.trim())}`;
+      }
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setMediaImages(data.images || []);
@@ -55,16 +72,34 @@ export default function ImageUploader({
   }, []);
 
   useEffect(() => {
-    if (showMediaModal && mediaImages.length === 0) {
+    if (showMediaModal) {
+      // Reset search when modal opens
+      setSearchQuery("");
+      setActiveSearch("");
       fetchMedia();
     }
-  }, [showMediaModal, mediaImages.length, fetchMedia]);
+  }, [showMediaModal, fetchMedia]);
+
+  // Debounced search
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setActiveSearch(value);
+      setMediaImages([]);
+      fetchMedia(value);
+    }, 400);
+  }, [fetchMedia]);
 
   const loadMore = async () => {
     if (!nextCursor) return;
     setLoadingMore(true);
     try {
-      const res = await fetch(`/api/media?folder=saranbaca&nextCursor=${nextCursor}`);
+      let url = `/api/media?folder=saranbaca&nextCursor=${nextCursor}`;
+      if (activeSearch && activeSearch.trim()) {
+        url += `&search=${encodeURIComponent(activeSearch.trim())}`;
+      }
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setMediaImages(prev => [...prev, ...(data.images || [])]);
@@ -118,13 +153,17 @@ export default function ImageUploader({
     }
   }
 
-  function handleSelectMedia(url: string) {
-    onChange(url);
+  function handleSelectMedia(img: CloudinaryImage) {
+    const metadata: ImageMetadata = {
+      alt: img.context?.custom?.alt || undefined,
+      caption: img.context?.custom?.caption || undefined,
+    };
+    onChange(img.url, metadata);
     setShowMediaModal(false);
   }
 
-  // Extracted to avoid duplication
-  const MediaModal = () => (
+  // Inline modal JSX (NOT a component function) to avoid unmount/remount on re-render
+  const mediaModal = showMediaModal ? (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
       <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-5xl h-[80vh] overflow-hidden flex flex-col shadow-2xl">
         <div className="flex items-center justify-between p-4 border-b border-white/10">
@@ -135,6 +174,40 @@ export default function ImageUploader({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Search Bar */}
+        <div className="px-4 pt-4 pb-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              placeholder="Cari berdasarkan caption atau tags..."
+              className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg pl-10 h-10"
+              autoFocus
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery("");
+                  setActiveSearch("");
+                  setMediaImages([]);
+                  fetchMedia();
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+          {activeSearch && (
+            <p className="text-xs text-slate-500 mt-2">
+              Menampilkan hasil untuk: <span className="text-emerald-400 font-medium">&quot;{activeSearch}&quot;</span>
+              {!loadingMedia && ` — ${mediaImages.length} gambar ditemukan`}
+            </p>
+          )}
+        </div>
         
         <div className="flex-1 overflow-y-auto p-4 space-y-6">
           {loadingMedia ? (
@@ -144,7 +217,7 @@ export default function ImageUploader({
           ) : mediaImages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-slate-500">
               <ImageIcon className="w-16 h-16 mb-4 opacity-50" />
-              <p>Belum ada media di Cloudinary.</p>
+              <p>{activeSearch ? `Tidak ada gambar yang cocok dengan "${activeSearch}"` : "Belum ada media di Cloudinary."}</p>
             </div>
           ) : (
             <>
@@ -152,7 +225,7 @@ export default function ImageUploader({
                 {mediaImages.map((img) => (
                   <div key={img.publicId} 
                     className="group relative bg-white/5 border border-white/10 rounded-xl overflow-hidden cursor-pointer hover:border-emerald-500/50 transition-colors"
-                    onClick={() => handleSelectMedia(img.url)}
+                    onClick={() => handleSelectMedia(img)}
                   >
                     <div className="relative aspect-square">
                       <Image 
@@ -168,11 +241,30 @@ export default function ImageUploader({
                         </span>
                       </div>
                     </div>
-                    <div className="p-2 bg-white/[0.02] border-t border-white/5">
+                    <div className="p-2 bg-white/[0.02] border-t border-white/5 space-y-1">
                       <p className="text-[10px] text-slate-400 uppercase">{img.format}</p>
-                      <p className="text-xs text-slate-300 truncate mt-0.5">
+                      <p className="text-xs text-slate-300 truncate" title={img.context?.custom?.alt || "Tanpa Alt"}>
                         {img.context?.custom?.alt || "Tanpa Alt"}
                       </p>
+                      {(img.context?.custom?.caption) && (
+                        <p className="text-[10px] text-slate-500 truncate italic" title={img.context?.custom?.caption}>
+                          {img.context?.custom?.caption}
+                        </p>
+                      )}
+                      {img.tags && img.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {img.tags.slice(0, 3).map((tag) => (
+                            <span key={tag} className="inline-block px-1.5 py-0.5 text-[9px] font-medium rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/20">
+                              {tag}
+                            </span>
+                          ))}
+                          {img.tags.length > 3 && (
+                            <span className="inline-block px-1.5 py-0.5 text-[9px] text-slate-500">
+                              +{img.tags.length - 3}
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -196,7 +288,7 @@ export default function ImageUploader({
         </div>
       </div>
     </div>
-  );
+  ) : null;
 
   if (value) {
     return (
@@ -237,7 +329,7 @@ export default function ImageUploader({
         </div>
 
         {/* Render Media Modal Even When Image is Selected to allow changing from media */}
-        {showMediaModal && <MediaModal />}
+        {mediaModal}
       </div>
     );
   }
@@ -297,7 +389,8 @@ export default function ImageUploader({
         <Search className="w-4 h-4 mr-2" /> Pilih dari Media Cloudinary
       </Button>
 
-      {showMediaModal && <MediaModal />}
+      {mediaModal}
     </div>
   );
 }
+
