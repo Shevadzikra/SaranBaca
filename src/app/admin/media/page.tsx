@@ -1,10 +1,17 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Upload, Copy, Trash2, ImageIcon, Loader2, Check, Edit2, X } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Upload, Copy, Trash2, ImageIcon, Loader2, Check, Edit2, X, Search, ArrowUp, ArrowDown, Calendar, Filter, RotateCcw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 
 interface CloudinaryImage {
@@ -30,7 +37,9 @@ export default function MediaPage() {
   const [copied, setCopied] = useState<string | null>(null);
   const [nextCursor, setNextCursor] = useState<string | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [totalCount, setTotalCount] = useState<number | null>(null);
 
+  // Edit modal state
   const [editingImage, setEditingImage] = useState<CloudinaryImage | null>(null);
   const [editAlt, setEditAlt] = useState("");
   const [editCaption, setEditCaption] = useState("");
@@ -42,31 +51,81 @@ export default function MediaPage() {
   const [uploadModalAlt, setUploadModalAlt] = useState("");
   const [uploadModalCaption, setUploadModalCaption] = useState("");
 
+  // --- Search & Filter state ---
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeSearch, setActiveSearch] = useState("");
+  const [filterFormat, setFilterFormat] = useState("");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+  const [sortOrder, setSortOrder] = useState<"desc" | "asc">("desc");
+  const [availableFormats, setAvailableFormats] = useState<string[]>([]);
+  const [loadingFormats, setLoadingFormats] = useState(false);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Check if any filter is active
+  const hasActiveFilters = activeSearch || filterFormat || filterDateFrom || filterDateTo || sortOrder !== "desc";
+
+  // --- Fetch available formats on mount ---
   useEffect(() => {
-    fetchMedia();
+    fetchFormats();
   }, []);
 
-  async function fetchMedia() {
+  async function fetchFormats() {
+    setLoadingFormats(true);
+    try {
+      const res = await fetch("/api/media/formats");
+      if (res.ok) {
+        const data = await res.json();
+        setAvailableFormats(data.formats || []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch formats:", error);
+    } finally {
+      setLoadingFormats(false);
+    }
+  }
+
+  // --- Build fetch URL with all filter params ---
+  const buildFetchUrl = useCallback((cursor?: string) => {
+    const params = new URLSearchParams();
+    params.set("folder", "saranbaca");
+    if (cursor) params.set("nextCursor", cursor);
+    if (activeSearch.trim()) params.set("search", activeSearch.trim());
+    if (filterFormat) params.set("format", filterFormat);
+    if (filterDateFrom) params.set("dateFrom", filterDateFrom);
+    if (filterDateTo) params.set("dateTo", filterDateTo);
+    if (sortOrder !== "desc") params.set("sortOrder", sortOrder);
+    return `/api/media?${params.toString()}`;
+  }, [activeSearch, filterFormat, filterDateFrom, filterDateTo, sortOrder]);
+
+  // --- Fetch media with current filters ---
+  const fetchMedia = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/media?folder=saranbaca");
+      const res = await fetch(buildFetchUrl());
       if (res.ok) {
         const data = await res.json();
         setImages(data.images || []);
         setNextCursor(data.nextCursor || null);
+        setTotalCount(data.totalCount ?? null);
       }
     } catch (error) {
       console.error("Failed to fetch media:", error);
     } finally {
       setLoading(false);
     }
-  }
+  }, [buildFetchUrl]);
+
+  // Load on mount and when filters change
+  useEffect(() => {
+    fetchMedia();
+  }, [fetchMedia]);
 
   async function loadMore() {
     if (!nextCursor) return;
     setLoadingMore(true);
     try {
-      const res = await fetch(`/api/media?folder=saranbaca&nextCursor=${nextCursor}`);
+      const res = await fetch(buildFetchUrl(nextCursor));
       if (res.ok) {
         const data = await res.json();
         setImages(prev => [...prev, ...(data.images || [])]);
@@ -79,13 +138,39 @@ export default function MediaPage() {
     }
   }
 
-  // Step 1: When user selects a file, open upload modal with preview
+  // --- Debounced search ---
+  function handleSearchChange(value: string) {
+    setSearchQuery(value);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setActiveSearch(value);
+    }, 400);
+  }
+
+  // --- Filter handlers ---
+  function handleFormatChange(value: string) {
+    setFilterFormat(value === "all" ? "" : value);
+  }
+
+  function handleSortToggle() {
+    setSortOrder(prev => prev === "desc" ? "asc" : "desc");
+  }
+
+  function resetAllFilters() {
+    setSearchQuery("");
+    setActiveSearch("");
+    setFilterFormat("");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+    setSortOrder("desc");
+  }
+
+  // --- Upload handlers ---
   function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     e.target.value = "";
 
-    // Create preview and open modal
     const previewUrl = URL.createObjectURL(file);
     setUploadModalFile(file);
     setUploadModalPreview(previewUrl);
@@ -93,7 +178,6 @@ export default function MediaPage() {
     setUploadModalCaption("");
   }
 
-  // Step 2: Close upload modal and cleanup
   function closeUploadModal() {
     if (uploadModalPreview) {
       URL.revokeObjectURL(uploadModalPreview);
@@ -104,7 +188,6 @@ export default function MediaPage() {
     setUploadModalCaption("");
   }
 
-  // Step 3: Perform actual upload with alt & caption
   async function handleUploadConfirm() {
     if (!uploadModalFile) return;
 
@@ -121,8 +204,8 @@ export default function MediaPage() {
 
       closeUploadModal();
 
-      // Refresh media list
-      await fetchMedia();
+      // Refresh both media list and format options
+      await Promise.all([fetchMedia(), fetchFormats()]);
     } catch {
       alert("Gagal mengupload gambar");
     } finally {
@@ -130,6 +213,7 @@ export default function MediaPage() {
     }
   }
 
+  // --- Copy, Delete, Edit handlers ---
   function handleCopy(url: string) {
     navigator.clipboard.writeText(url);
     setCopied(url);
@@ -145,6 +229,7 @@ export default function MediaPage() {
       });
       if (res.ok) {
         setImages(images.filter((img) => img.publicId !== publicId));
+        fetchFormats();
       } else {
         alert("Gagal menghapus gambar");
       }
@@ -175,7 +260,6 @@ export default function MediaPage() {
       });
 
       if (res.ok) {
-        // Update local state
         setImages(images.map(img => {
           if (img.publicId === editingImage.publicId) {
             return {
@@ -204,6 +288,7 @@ export default function MediaPage() {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-white">Media</h1>
@@ -216,6 +301,155 @@ export default function MediaPage() {
         </label>
       </div>
 
+      {/* Search & Filters */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+        {/* Search Bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => handleSearchChange(e.target.value)}
+            placeholder="Cari berdasarkan caption, alt text, atau tags..."
+            className="bg-white/5 border-white/10 text-white placeholder:text-slate-500 rounded-lg pl-10 pr-10 h-10"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery("");
+                setActiveSearch("");
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Filter Row */}
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Format Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <Select value={filterFormat || "all"} onValueChange={handleFormatChange}>
+              <SelectTrigger className="bg-white/5 border-white/10 text-slate-300 rounded-lg h-9 w-[140px] text-sm">
+                <SelectValue placeholder="Format" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua Format</SelectItem>
+                {availableFormats.map((fmt) => (
+                  <SelectItem key={fmt} value={fmt}>
+                    {fmt.toUpperCase()}
+                  </SelectItem>
+                ))}
+                {loadingFormats && (
+                  <div className="flex items-center justify-center py-2">
+                    <Loader2 className="w-4 h-4 animate-spin text-slate-400" />
+                  </div>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Date From */}
+          <div className="flex items-center gap-2">
+            <Calendar className="w-3.5 h-3.5 text-slate-500 shrink-0" />
+            <div className="relative">
+              <input
+                type="date"
+                value={filterDateFrom}
+                onChange={(e) => setFilterDateFrom(e.target.value)}
+                className="bg-white/5 border border-white/10 text-slate-300 rounded-lg h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 [color-scheme:dark]"
+                title="Dari tanggal"
+              />
+            </div>
+            <span className="text-xs text-slate-600">&mdash;</span>
+            <div className="relative">
+              <input
+                type="date"
+                value={filterDateTo}
+                onChange={(e) => setFilterDateTo(e.target.value)}
+                className="bg-white/5 border border-white/10 text-slate-300 rounded-lg h-9 px-3 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 [color-scheme:dark]"
+                title="Sampai tanggal"
+              />
+            </div>
+          </div>
+
+          {/* Sort Toggle */}
+          <button
+            type="button"
+            onClick={handleSortToggle}
+            className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-white/10 bg-white/5 text-sm text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+            title={sortOrder === "desc" ? "Terbaru dahulu" : "Terlama dahulu"}
+          >
+            {sortOrder === "desc" ? (
+              <ArrowDown className="w-3.5 h-3.5 text-emerald-400" />
+            ) : (
+              <ArrowUp className="w-3.5 h-3.5 text-amber-400" />
+            )}
+            {sortOrder === "desc" ? "Terbaru" : "Terlama"}
+          </button>
+
+          {/* Reset Filters */}
+          {hasActiveFilters && (
+            <button
+              type="button"
+              onClick={resetAllFilters}
+              className="inline-flex items-center gap-1.5 px-3 h-9 rounded-lg border border-red-500/20 bg-red-500/5 text-sm text-red-400 hover:bg-red-500/10 transition-colors"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              Reset
+            </button>
+          )}
+        </div>
+
+        {/* Active Filters Summary & Result Count */}
+        {hasActiveFilters && (
+          <div className="flex items-center justify-between pt-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {activeSearch && (
+                <Badge className="bg-emerald-500/15 text-emerald-400 border-emerald-500/20 text-[10px] px-2 py-0.5 gap-1">
+                  Cari: &quot;{activeSearch}&quot;
+                  <button type="button" onClick={() => { setSearchQuery(""); setActiveSearch(""); }} className="hover:text-white ml-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              {filterFormat && (
+                <Badge className="bg-blue-500/15 text-blue-400 border-blue-500/20 text-[10px] px-2 py-0.5 gap-1">
+                  {filterFormat.toUpperCase()}
+                  <button type="button" onClick={() => setFilterFormat("")} className="hover:text-white ml-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              {(filterDateFrom || filterDateTo) && (
+                <Badge className="bg-purple-500/15 text-purple-400 border-purple-500/20 text-[10px] px-2 py-0.5 gap-1">
+                  {filterDateFrom || "..."} &mdash; {filterDateTo || "..."}
+                  <button type="button" onClick={() => { setFilterDateFrom(""); setFilterDateTo(""); }} className="hover:text-white ml-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+              {sortOrder === "asc" && (
+                <Badge className="bg-amber-500/15 text-amber-400 border-amber-500/20 text-[10px] px-2 py-0.5 gap-1">
+                  Terlama dahulu
+                  <button type="button" onClick={() => setSortOrder("desc")} className="hover:text-white ml-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </Badge>
+              )}
+            </div>
+            {!loading && (
+              <p className="text-xs text-slate-500 shrink-0 ml-4">
+                {totalCount !== null ? `${totalCount} gambar ditemukan` : `${images.length} gambar`}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Image Grid */}
       {loading ? (
         <div className="flex justify-center items-center h-64">
           <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
@@ -223,8 +457,22 @@ export default function MediaPage() {
       ) : images.length === 0 ? (
         <div className="bg-white/5 border border-white/10 rounded-2xl p-16 text-center">
           <ImageIcon className="w-16 h-16 text-slate-600 mx-auto mb-4" />
-          <p className="text-slate-400 text-lg">Belum ada gambar</p>
-          <p className="text-slate-500 text-sm mt-1">Upload gambar pertama Anda</p>
+          <p className="text-slate-400 text-lg">
+            {hasActiveFilters ? "Tidak ada gambar yang cocok" : "Belum ada gambar"}
+          </p>
+          <p className="text-slate-500 text-sm mt-1">
+            {hasActiveFilters ? "Coba ubah filter atau kata kunci pencarian" : "Upload gambar pertama Anda"}
+          </p>
+          {hasActiveFilters && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={resetAllFilters}
+              className="mt-4 border-white/10 text-slate-300 hover:text-white hover:bg-white/10"
+            >
+              <RotateCcw className="w-4 h-4 mr-2" /> Reset Filter
+            </Button>
+          )}
         </div>
       ) : (
         <div className="space-y-8">
@@ -338,7 +586,7 @@ export default function MediaPage() {
         </div>
       )}
 
-      {/* Upload Modal — shown when user selects a file, before actual upload */}
+      {/* Upload Modal */}
       {uploadModalFile && uploadModalPreview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">

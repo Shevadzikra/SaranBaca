@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getImages, searchImages, deleteImage, updateImageContext } from "@/lib/cloudinary";
+import { getImages, searchMediaImages, deleteImage, updateImageContext } from "@/lib/cloudinary";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -14,11 +14,31 @@ export async function GET(request: Request) {
   const folder = searchParams.get("folder") || "saranbaca";
   const nextCursor = searchParams.get("nextCursor") || undefined;
   const search = searchParams.get("search") || undefined;
+  const format = searchParams.get("format") || undefined;
+  const sortOrder = (searchParams.get("sortOrder") as "asc" | "desc") || undefined;
+  const dateFrom = searchParams.get("dateFrom") || undefined;
+  const dateTo = searchParams.get("dateTo") || undefined;
   
   try {
-    const data = search
-      ? await searchImages(search, folder, 30, nextCursor)
-      : await getImages(folder, 10, nextCursor);
+    // Use advanced search when any filter/search/sort is active
+    const hasFilters = search || format || sortOrder || dateFrom || dateTo;
+
+    if (hasFilters) {
+      const data = await searchMediaImages({
+        query: search,
+        folder,
+        format,
+        dateFrom,
+        dateTo,
+        sortOrder,
+        maxResults: 30,
+        nextCursor,
+      });
+      return NextResponse.json(data);
+    }
+
+    // Default: simple listing (no filters)
+    const data = await getImages(folder, 10, nextCursor);
     return NextResponse.json(data);
   } catch (error) {
     console.error("Failed to fetch media:", error);

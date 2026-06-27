@@ -162,6 +162,131 @@ export async function searchImages(
   }
 }
 
+// --- Advanced Media Search with Filters ---
+
+export interface MediaSearchOptions {
+  query?: string;
+  folder?: string;
+  format?: string;
+  dateFrom?: string; // YYYY-MM-DD
+  dateTo?: string;   // YYYY-MM-DD
+  sortOrder?: "asc" | "desc";
+  maxResults?: number;
+  nextCursor?: string;
+}
+
+export async function searchMediaImages(options: MediaSearchOptions): Promise<{
+  images: CloudinaryImage[];
+  nextCursor?: string;
+  totalCount?: number;
+}> {
+  try {
+    const folder = options.folder || "saranbaca";
+    const expressionParts: string[] = [`folder:${folder}/*`];
+
+    // Text search across caption, alt, and tags
+    if (options.query) {
+      const sanitized = options.query.replace(/[\\\"\':\(\)\[\]\{\}\*\?\!\&\|\/\~\^]/g, "").trim();
+      if (sanitized) {
+        expressionParts.push(
+          `(context.caption:${sanitized} OR context.alt:${sanitized} OR tags:${sanitized})`
+        );
+      }
+    }
+
+    // Format filter (e.g., "jpg", "webp", "png")
+    if (options.format) {
+      expressionParts.push(`format:${options.format}`);
+    }
+
+    // Date range filter
+    if (options.dateFrom || options.dateTo) {
+      const from = options.dateFrom || "*";
+      const to = options.dateTo ? `${options.dateTo}T23:59:59Z` : "*";
+      expressionParts.push(`created_at:[${from} TO ${to}]`);
+    }
+
+    const expression = expressionParts.join(" AND ");
+    const sortOrder = options.sortOrder || "desc";
+
+    let searchBuilder = cloudinary.search
+      .expression(expression)
+      .with_field("context")
+      .with_field("tags")
+      .sort_by("created_at", sortOrder)
+      .max_results(options.maxResults || 30);
+
+    if (options.nextCursor) {
+      searchBuilder = searchBuilder.next_cursor(options.nextCursor);
+    }
+
+    const result = await searchBuilder.execute();
+
+    const images: CloudinaryImage[] = (result.resources || []).map((res: any) => {
+      // Normalize context format (Search API returns flat, Admin API returns nested)
+      let context = res.context;
+      if (context && !context.custom) {
+        context = { custom: { ...context } };
+      }
+
+      return {
+        url: res.secure_url,
+        publicId: res.public_id,
+        format: res.format,
+        width: res.width,
+        height: res.height,
+        bytes: res.bytes,
+        createdAt: res.created_at,
+        tags: res.tags || [],
+        displayName: res.display_name || undefined,
+        context,
+      };
+    });
+
+    return {
+      images,
+      nextCursor: result.next_cursor,
+      totalCount: result.total_count,
+    };
+  } catch (error) {
+    console.error("Error in searchMediaImages:", error);
+    return { images: [] };
+  }
+}
+
+/**
+ * Get all unique image formats that have been uploaded to a folder.
+ * Used to populate dynamic format filter options.
+ */
+export async function getAvailableFormats(folder: string = "saranbaca"): Promise<string[]> {
+  try {
+    const formats = new Set<string>();
+    let nextCursor: string | undefined;
+
+    do {
+      const options: any = {
+        type: "upload",
+        prefix: folder,
+        max_results: 500,
+      };
+      if (nextCursor) options.next_cursor = nextCursor;
+
+      const result = await cloudinary.api.resources(options);
+
+      for (const res of result.resources) {
+        if (res.format) formats.add(res.format);
+      }
+
+      nextCursor = result.next_cursor;
+    } while (nextCursor);
+
+    return Array.from(formats).sort();
+  } catch (error) {
+    console.error("Error fetching available formats:", error);
+    return [];
+  }
+}
+
 export async function updateImageContext(publicId: string, alt: string, caption: string): Promise<void> {
   const contextString = `alt=${alt || ""} | caption=${caption || ""}`;
   await cloudinary.uploader.add_context(contextString, [publicId]);
