@@ -129,18 +129,28 @@ export async function searchImages(
 
     const result = await searchBuilder.execute();
 
-    const images: CloudinaryImage[] = (result.resources || []).map((res: any) => ({
-      url: res.secure_url,
-      publicId: res.public_id,
-      format: res.format,
-      width: res.width,
-      height: res.height,
-      bytes: res.bytes,
-      createdAt: res.created_at,
-      tags: res.tags || [],
-      displayName: res.display_name || undefined,
-      context: res.context,
-    }));
+    const images: CloudinaryImage[] = (result.resources || []).map((res: any) => {
+      // Cloudinary Search API returns context as { alt, caption } (flat)
+      // Admin API returns context as { custom: { alt, caption } }
+      // Normalize to the { custom: { ... } } format for consistency
+      let context = res.context;
+      if (context && !context.custom) {
+        context = { custom: { ...context } };
+      }
+
+      return {
+        url: res.secure_url,
+        publicId: res.public_id,
+        format: res.format,
+        width: res.width,
+        height: res.height,
+        bytes: res.bytes,
+        createdAt: res.created_at,
+        tags: res.tags || [],
+        displayName: res.display_name || undefined, // untuk saat ini tidak memakai displayName, tetap ditulis karena mungkin dibutuhkan
+        context,
+      };
+    });
 
     return {
       images,
