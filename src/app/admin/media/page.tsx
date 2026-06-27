@@ -36,6 +36,12 @@ export default function MediaPage() {
   const [editCaption, setEditCaption] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
+  // Upload modal state
+  const [uploadModalFile, setUploadModalFile] = useState<File | null>(null);
+  const [uploadModalPreview, setUploadModalPreview] = useState<string | null>(null);
+  const [uploadModalAlt, setUploadModalAlt] = useState("");
+  const [uploadModalCaption, setUploadModalCaption] = useState("");
+
   useEffect(() => {
     fetchMedia();
   }, []);
@@ -73,18 +79,47 @@ export default function MediaPage() {
     }
   }
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
+  // Step 1: When user selects a file, open upload modal with preview
+  function handleFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+    e.target.value = "";
+
+    // Create preview and open modal
+    const previewUrl = URL.createObjectURL(file);
+    setUploadModalFile(file);
+    setUploadModalPreview(previewUrl);
+    setUploadModalAlt("");
+    setUploadModalCaption("");
+  }
+
+  // Step 2: Close upload modal and cleanup
+  function closeUploadModal() {
+    if (uploadModalPreview) {
+      URL.revokeObjectURL(uploadModalPreview);
+    }
+    setUploadModalFile(null);
+    setUploadModalPreview(null);
+    setUploadModalAlt("");
+    setUploadModalCaption("");
+  }
+
+  // Step 3: Perform actual upload with alt & caption
+  async function handleUploadConfirm() {
+    if (!uploadModalFile) return;
 
     setUploading(true);
     try {
       const formData = new FormData();
-      formData.append("file", file);
+      formData.append("file", uploadModalFile);
       formData.append("folder", "saranbaca/media");
+      if (uploadModalAlt.trim()) formData.append("alt", uploadModalAlt.trim());
+      if (uploadModalCaption.trim()) formData.append("caption", uploadModalCaption.trim());
 
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       if (!res.ok) throw new Error("Upload failed");
+
+      closeUploadModal();
 
       // Refresh media list
       await fetchMedia();
@@ -175,9 +210,9 @@ export default function MediaPage() {
           <p className="text-slate-400 mt-1">Kelola gambar yang diupload ke Cloudinary</p>
         </div>
         <label className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-medium shadow-lg shadow-emerald-500/25 cursor-pointer transition-all hover:shadow-emerald-500/40 text-sm">
-          {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-          {uploading ? "Mengupload..." : "Upload Gambar"}
-          <input type="file" accept="image/*" onChange={handleUpload} className="hidden" disabled={uploading} />
+          <Upload className="w-4 h-4" />
+          Upload Gambar
+          <input type="file" accept="image/*" onChange={handleFileSelected} className="hidden" />
         </label>
       </div>
 
@@ -297,6 +332,64 @@ export default function MediaPage() {
                 className="bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg shadow-emerald-500/20">
                 {savingEdit ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                 Simpan Perubahan
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Upload Modal — shown when user selects a file, before actual upload */}
+      {uploadModalFile && uploadModalPreview && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-md overflow-hidden shadow-2xl">
+            <div className="flex items-center justify-between p-4 border-b border-white/10">
+              <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                <Upload className="w-5 h-5 text-emerald-400" /> Upload Gambar Baru
+              </h3>
+              <button onClick={closeUploadModal} className="text-slate-400 hover:text-white transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              {/* Preview */}
+              <div className="relative w-full h-40 rounded-lg overflow-hidden border border-white/10 bg-black/20">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={uploadModalPreview} alt="Preview" className="w-full h-full object-contain" />
+              </div>
+
+              {/* File info */}
+              <div className="flex items-center gap-2 text-xs text-slate-500">
+                <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 font-mono uppercase">
+                  {uploadModalFile.name.split('.').pop()}
+                </span>
+                <span>{(uploadModalFile.size / 1024).toFixed(1)} KB</span>
+                <span className="truncate flex-1 text-slate-600">{uploadModalFile.name}</span>
+              </div>
+
+              {/* Alt Text */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Alt Text</label>
+                <Input value={uploadModalAlt} onChange={(e) => setUploadModalAlt(e.target.value)} placeholder="Deskripsi gambar untuk SEO & Aksesibilitas"
+                  className="bg-black/20 border-white/10 text-white placeholder:text-slate-500" />
+                <p className="text-[10px] text-slate-500">Penting untuk mesin pencari dan screen reader.</p>
+              </div>
+
+              {/* Caption */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-300">Caption</label>
+                <Input value={uploadModalCaption} onChange={(e) => setUploadModalCaption(e.target.value)} placeholder="Teks yang akan muncul di bawah gambar"
+                  className="bg-black/20 border-white/10 text-white placeholder:text-slate-500" />
+                <p className="text-[10px] text-slate-500">Keterangan atau sumber gambar.</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-end gap-3 p-4 border-t border-white/10 bg-white/5">
+              <Button type="button" variant="ghost" onClick={closeUploadModal} className="text-slate-300 hover:text-white hover:bg-white/10">
+                Batal
+              </Button>
+              <Button type="button" onClick={handleUploadConfirm} disabled={uploading}
+                className="bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+                {uploading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Upload className="w-4 h-4 mr-2" />}
+                {uploading ? "Mengupload..." : "Upload ke Cloudinary"}
               </Button>
             </div>
           </div>

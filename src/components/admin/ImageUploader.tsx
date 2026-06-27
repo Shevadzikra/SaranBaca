@@ -31,14 +31,20 @@ interface ImageUploaderProps {
   value?: string | null;
   onChange: (url: string, metadata?: ImageMetadata) => void;
   onRemove?: () => void;
+  onPendingFileChange?: (file: File | null) => void;
+}
+
+// Helper to check if a URL is a local blob URL (not yet uploaded to Cloudinary)
+export function isBlobUrl(url: string | null | undefined): boolean {
+  return !!url && url.startsWith("blob:");
 }
 
 export default function ImageUploader({
   value,
   onChange,
   onRemove,
+  onPendingFileChange,
 }: ImageUploaderProps) {
-  const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const [showMediaModal, setShowMediaModal] = useState(false);
   const [mediaImages, setMediaImages] = useState<CloudinaryImage[]>([]);
@@ -50,6 +56,9 @@ export default function ImageUploader({
   const [searchQuery, setSearchQuery] = useState("");
   const [activeSearch, setActiveSearch] = useState("");
   const searchDebounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  // Track current blob URL for cleanup
+  const currentBlobUrlRef = useRef<string | null>(null);
 
   const fetchMedia = useCallback(async (search?: string) => {
     setLoadingMedia(true);
@@ -112,36 +121,32 @@ export default function ImageUploader({
     }
   };
 
-  const handleUpload = useCallback(
-    async (file: File) => {
-      setUploading(true);
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-        formData.append("folder", "saranbaca/articles");
-
-        const res = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) throw new Error("Upload failed");
-
-        const data = await res.json();
-        onChange(data.url);
-      } catch (error) {
-        console.error("Upload error:", error);
-        alert("Gagal mengupload gambar. Silakan coba lagi.");
-      } finally {
-        setUploading(false);
+  // Deferred upload: create local blob preview instead of uploading to Cloudinary
+  const handleFileSelect_deferred = useCallback(
+    (file: File) => {
+      // Revoke old blob URL if exists
+      if (currentBlobUrlRef.current) {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
       }
+
+      // Create new blob URL for local preview
+      const blobUrl = URL.createObjectURL(file);
+      currentBlobUrlRef.current = blobUrl;
+
+      // Notify parent about the pending file
+      onPendingFileChange?.(file);
+
+      // Set the blob URL as the image value (local preview)
+      onChange(blobUrl);
     },
-    [onChange]
+    [onChange, onPendingFileChange]
   );
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (file) handleUpload(file);
+    if (file) handleFileSelect_deferred(file);
+    // Reset input value so the same file can be re-selected
+    e.target.value = "";
   }
 
   function handleDrop(e: React.DragEvent) {
@@ -149,11 +154,18 @@ export default function ImageUploader({
     setDragOver(false);
     const file = e.dataTransfer.files[0];
     if (file && file.type.startsWith("image/")) {
-      handleUpload(file);
+      handleFileSelect_deferred(file);
     }
   }
 
   function handleSelectMedia(img: CloudinaryImage) {
+    // When selecting from media library, clear any pending file
+    if (currentBlobUrlRef.current) {
+      URL.revokeObjectURL(currentBlobUrlRef.current);
+      currentBlobUrlRef.current = null;
+    }
+    onPendingFileChange?.(null);
+
     const metadata: ImageMetadata = {
       alt: img.context?.custom?.alt || undefined,
       caption: img.context?.custom?.caption || undefined,
@@ -161,6 +173,15 @@ export default function ImageUploader({
     onChange(img.url, metadata);
     setShowMediaModal(false);
   }
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => {
+      if (currentBlobUrlRef.current) {
+        URL.revokeObjectURL(currentBlobUrlRef.current);
+      }
+    };
+  }, []);
 
   // Inline modal JSX (NOT a component function) to avoid unmount/remount on re-render
   const mediaModal = showMediaModal ? (
@@ -291,15 +312,26 @@ export default function ImageUploader({
   ) : null;
 
   if (value) {
+    const isBlob = isBlobUrl(value);
     return (
       <div className="relative rounded-xl overflow-hidden border border-white/10 group">
+        {/* Use unoptimized for blob URLs since Next.js Image can't optimize local blobs */}
         <Image
           src={value}
           alt="Featured"
           width={800}
           height={420}
           className="w-full h-48 object-cover"
+          {...(isBlob ? { unoptimized: true } : {})}
         />
+        {/* Indicator badge for pending (not yet uploaded) images */}
+        {isBlob && (
+          <div className="absolute top-2 left-2 z-10">
+            <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-amber-500/90 text-white text-[10px] font-semibold uppercase tracking-wider backdrop-blur-sm">
+              <Upload className="w-3 h-3" /> Belum diupload
+            </span>
+          </div>
+        )}
         <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
           <label className="cursor-pointer px-3 py-1.5 rounded-lg bg-white/20 text-white text-sm hover:bg-white/30 transition-colors">
             Ganti
@@ -354,9 +386,8 @@ export default function ImageUploader({
           accept="image/*"
           onChange={handleFileSelect}
           className="hidden"
-          disabled={uploading}
         />
-        {uploading ? (
+        {false ? (
           <>
             <Loader2 className="w-8 h-8 text-emerald-400 animate-spin mb-2" />
             <span className="text-sm text-slate-400">Mengupload...</span>

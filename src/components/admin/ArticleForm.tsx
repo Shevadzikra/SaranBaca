@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/select";
 import { Save, Loader2, Plus, Trash2, Globe, Search, CheckCircle2, AlertTriangle, ArrowUp, ArrowDown, Link2, Type, BookOpen, Tags, ChevronDown, ChevronRight } from "lucide-react";
 import RichTextEditor from "./RichTextEditor";
-import ImageUploader, { type ImageMetadata } from "./ImageUploader";
+import ImageUploader, { type ImageMetadata, isBlobUrl } from "./ImageUploader";
 import ArticlePreview from "./ArticlePreview";
 import slugify from "slugify";
 
@@ -239,6 +239,11 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
     initialData?.relatedArticles || []
   );
 
+  // --- Deferred upload state ---
+  // Pending files: images selected from device that haven't been uploaded to Cloudinary yet
+  const [pendingFeaturedImage, setPendingFeaturedImage] = useState<File | null>(null);
+  const [pendingBlockImages, setPendingBlockImages] = useState<Record<string, File | null>>({});
+
   // Data
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [tags, setTags] = useState<{ id: string; name: string; tagGroup?: { id: string; name: string; slug: string } | null }[]>([]);
@@ -369,32 +374,122 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
     return acc + " " + sectionText;
   }, "");
 
+  // --- Helper: upload a single file to Cloudinary with context metadata ---
+  async function uploadFileToCloudinary(
+    file: File,
+    folder: string,
+    alt?: string,
+    caption?: string
+  ): Promise<{ url: string; publicId: string }> {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("folder", folder);
+    if (alt) formData.append("alt", alt);
+    if (caption) formData.append("caption", caption);
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+
+    if (!res.ok) throw new Error("Upload failed");
+    return res.json();
+  }
+
+  // --- Helper: update Cloudinary context metadata for an existing image ---
+  async function updateCloudinaryContext(
+    imageUrl: string,
+    alt: string,
+    caption: string
+  ): Promise<void> {
+    // Extract publicId from Cloudinary URL: e.g. https://res.cloudinary.com/.../saranbaca/articles/xyz.jpg
+    // We need to call our media API to update context
+    // The media API expects publicId, so we try to derive it from URL
+    try {
+      const urlObj = new URL(imageUrl);
+      const pathParts = urlObj.pathname.split("/upload/");
+      if (pathParts.length < 2) return;
+      // Remove version prefix (e.g. v1234567890/) and file extension
+      let publicId = pathParts[1].replace(/^v\d+\//, "").replace(/\.[^.]+$/, "");
+      if (!publicId) return;
+
+      await fetch("/api/media", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ publicId, alt, caption }),
+      });
+    } catch {
+      console.error("Failed to update Cloudinary context for:", imageUrl);
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
 
-    const body = {
-      title,
-      slug: articleSlug,
-      excerpt,
-      content: JSON.stringify(blocks),
-      featuredImage: featuredImage || null,
-      featuredImageAlt: featuredImageAlt || null,
-      featuredImageCaption: featuredImageCaption || null,
-      status,
-      categoryId: categoryId || null,
-      tagIds: selectedTagIds,
-      relatedArticleIds: relatedArticles.map(a => a.id),
-      metaTitle: metaTitle || null,
-      metaDescription: metaDescription || null,
-      canonicalUrl: canonicalUrl || null,
-      noIndex,
-      focusKeyword: focusKeyword || null,
-      schemaType,
-      faqs,
-    };
-
     try {
+      // --- Step 1: Upload all pending images to Cloudinary ---
+      let finalFeaturedImage = featuredImage;
+
+      // Upload pending featured image
+      if (pendingFeaturedImage && isBlobUrl(featuredImage)) {
+        const result = await uploadFileToCloudinary(
+          pendingFeaturedImage,
+          "saranbaca/articles",
+          featuredImageAlt,
+          featuredImageCaption
+        );
+        finalFeaturedImage = result.url;
+      } else if (featuredImage && !isBlobUrl(featuredImage) && featuredImage.includes("cloudinary")) {
+        // Existing Cloudinary image — update context if alt/caption may have changed
+        await updateCloudinaryContext(featuredImage, featuredImageAlt, featuredImageCaption);
+      }
+
+      // Upload pending block images and update context for existing ones
+      const finalBlocks = await Promise.all(
+        blocks.map(async (block) => {
+          let finalBlockImage = block.image;
+
+          const pendingFile = pendingBlockImages[block.id];
+          if (pendingFile && isBlobUrl(block.image)) {
+            const result = await uploadFileToCloudinary(
+              pendingFile,
+              "saranbaca/articles",
+              block.imageAlt,
+              block.imageCaption
+            );
+            finalBlockImage = result.url;
+          } else if (block.image && !isBlobUrl(block.image) && block.image.includes("cloudinary")) {
+            // Existing Cloudinary image — update context if alt/caption may have changed
+            await updateCloudinaryContext(block.image, block.imageAlt, block.imageCaption);
+          }
+
+          return { ...block, image: finalBlockImage };
+        })
+      );
+
+      // --- Step 2: Build article body and send to API ---
+      const body = {
+        title,
+        slug: articleSlug,
+        excerpt,
+        content: JSON.stringify(finalBlocks),
+        featuredImage: finalFeaturedImage || null,
+        featuredImageAlt: featuredImageAlt || null,
+        featuredImageCaption: featuredImageCaption || null,
+        status,
+        categoryId: categoryId || null,
+        tagIds: selectedTagIds,
+        relatedArticleIds: relatedArticles.map(a => a.id),
+        metaTitle: metaTitle || null,
+        metaDescription: metaDescription || null,
+        canonicalUrl: canonicalUrl || null,
+        noIndex,
+        focusKeyword: focusKeyword || null,
+        schemaType,
+        faqs,
+      };
+
       const url = mode === "create"
         ? "/api/articles"
         : `/api/articles/${initialData?.id}`;
@@ -414,7 +509,7 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
         alert(err.error || "Gagal menyimpan artikel");
       }
     } catch {
-      alert("Terjadi kesalahan");
+      alert("Terjadi kesalahan saat menyimpan artikel");
     } finally {
       setSaving(false);
     }
@@ -492,7 +587,10 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                     setFeaturedImage(url);
                     if (metadata?.alt && !featuredImageAlt) setFeaturedImageAlt(metadata.alt);
                     if (metadata?.caption && !featuredImageCaption) setFeaturedImageCaption(metadata.caption);
-                  }} onRemove={() => setFeaturedImage("")} />
+                  }} onRemove={() => {
+                    setFeaturedImage("");
+                    setPendingFeaturedImage(null);
+                  }} onPendingFileChange={(file) => setPendingFeaturedImage(file)} />
                 </div>
                 {/* Featured Image Alt & Caption */}
                 {featuredImage && (
@@ -562,7 +660,12 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                             if (metadata?.alt && !block.imageAlt) updates.imageAlt = metadata.alt;
                             if (metadata?.caption && !block.imageCaption) updates.imageCaption = metadata.caption;
                             updateBlock(block.id, updates);
-                          }} onRemove={() => updateBlock(block.id, { image: "" })} />
+                          }} onRemove={() => {
+                            updateBlock(block.id, { image: "" });
+                            setPendingBlockImages(prev => { const n = { ...prev }; delete n[block.id]; return n; });
+                          }} onPendingFileChange={(file) => {
+                            setPendingBlockImages(prev => ({ ...prev, [block.id]: file }));
+                          }} />
                         </div>
 
                         {block.image && (
