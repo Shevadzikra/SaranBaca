@@ -629,7 +629,7 @@ export default function ArticleForm({ initialData, mode }: ArticleFormProps) {
                   {blocks.map((block, i) => (
                     <div key={block.id} className="bg-white/5 border border-white/10 rounded-xl p-5 space-y-5 relative group">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">Blok #{i + 1}</span>
+                        <span className="text-xs font-semibold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded">{i === 0 ? "Blok Pembuka" : `Blok #${i}`}</span>
                         <div className="flex items-center gap-1">
                           <button type="button" onClick={() => moveBlock(i, 'up')} disabled={i === 0}
                             className="p-1.5 text-slate-400 hover:bg-white/10 hover:text-white rounded-lg disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400 transition-colors">
