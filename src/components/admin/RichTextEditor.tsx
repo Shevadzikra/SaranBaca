@@ -58,7 +58,7 @@ export default function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "prose prose-invert prose-sm sm:prose-base max-w-none min-h-[300px] p-4 focus:outline-none",
+          "prose-article max-w-none min-h-[300px] p-4 focus:outline-none",
       },
     },
   });
@@ -222,7 +222,7 @@ export default function RichTextEditor({
       </div>
 
       {/* Editor Content */}
-      <EditorContent editor={editor} className="bg-blue-50" />
+      <EditorContent editor={editor} className="bg-white text-slate-900 rounded-b-xl" />
     </div>
   );
 }

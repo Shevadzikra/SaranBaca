@@ -166,6 +166,13 @@
   @apply my-8 border-gray-200;
 }
 
+/* Tiptap placeholder styling */
+.tiptap p.is-editor-empty::before {
+  @apply text-slate-400 pointer-events-none float-left h-0;
+  content: attr(data-placeholder);
+}
+
+
 /* Reading progress bar */
 .reading-progress {
   position: fixed;
