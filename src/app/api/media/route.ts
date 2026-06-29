@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { getImages, searchMediaImages, deleteImage, updateImageContext } from "@/lib/cloudinary";
+import prisma from "@/lib/prisma";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -61,8 +63,64 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: "Missing publicId" }, { status: 400 });
     }
 
+    // 1. Update Cloudinary contextual metadata
     await updateImageContext(publicId, alt || "", caption || "");
-    return NextResponse.json({ success: true });
+
+    // 2. Sync alt/caption to all articles that reference this image
+    const affectedArticles = await prisma.article.findMany({
+      where: {
+        OR: [
+          { featuredImage: { contains: publicId } },
+          { content: { contains: publicId } },
+        ],
+      },
+    });
+
+    for (const article of affectedArticles) {
+      const updates: Record<string, unknown> = {};
+
+      // Sync featured image alt/caption
+      if (article.featuredImage && article.featuredImage.includes(publicId)) {
+        updates.featuredImageAlt = alt || null;
+        updates.featuredImageCaption = caption || null;
+      }
+
+      // Sync block images in content JSON
+      if (article.content && article.content.includes(publicId)) {
+        try {
+          const blocks = JSON.parse(article.content);
+          if (Array.isArray(blocks)) {
+            let contentChanged = false;
+            for (const block of blocks) {
+              if (block.image && block.image.includes(publicId)) {
+                block.imageAlt = alt || "";
+                block.imageCaption = caption || "";
+                contentChanged = true;
+              }
+            }
+            if (contentChanged) {
+              updates.content = JSON.stringify(blocks);
+            }
+          }
+        } catch {
+          // Content JSON parsing failed, skip
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await prisma.article.update({
+          where: { id: article.id },
+          data: updates,
+        });
+        revalidatePath(`/artikel/${article.slug}`);
+      }
+    }
+
+    if (affectedArticles.length > 0) {
+      revalidatePath("/");
+    }
+
+    return NextResponse.json({ success: true, syncedArticles: affectedArticles.length });
   } catch (error) {
     console.error("Failed to update media context:", error);
     return NextResponse.json({ error: "Failed to update media context" }, { status: 500 });
@@ -84,8 +142,66 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: "Missing publicId" }, { status: 400 });
     }
 
+    // 1. Delete from Cloudinary
     await deleteImage(publicId);
-    return NextResponse.json({ success: true });
+
+    // 2. Clean up references in articles that used this image
+    const affectedArticles = await prisma.article.findMany({
+      where: {
+        OR: [
+          { featuredImage: { contains: publicId } },
+          { content: { contains: publicId } },
+        ],
+      },
+    });
+
+    for (const article of affectedArticles) {
+      const updates: Record<string, unknown> = {};
+
+      // Clear featured image if it matches the deleted image
+      if (article.featuredImage && article.featuredImage.includes(publicId)) {
+        updates.featuredImage = null;
+        updates.featuredImageAlt = null;
+        updates.featuredImageCaption = null;
+      }
+
+      // Clear block images in content JSON
+      if (article.content && article.content.includes(publicId)) {
+        try {
+          const blocks = JSON.parse(article.content);
+          if (Array.isArray(blocks)) {
+            let contentChanged = false;
+            for (const block of blocks) {
+              if (block.image && block.image.includes(publicId)) {
+                block.image = "";
+                block.imageAlt = "";
+                block.imageCaption = "";
+                contentChanged = true;
+              }
+            }
+            if (contentChanged) {
+              updates.content = JSON.stringify(blocks);
+            }
+          }
+        } catch {
+          // Content JSON parsing failed, skip
+        }
+      }
+
+      if (Object.keys(updates).length > 0) {
+        await prisma.article.update({
+          where: { id: article.id },
+          data: updates,
+        });
+        revalidatePath(`/artikel/${article.slug}`);
+      }
+    }
+
+    if (affectedArticles.length > 0) {
+      revalidatePath("/");
+    }
+
+    return NextResponse.json({ success: true, syncedArticles: affectedArticles.length });
   } catch (error) {
     console.error("Failed to delete media:", error);
     return NextResponse.json({ error: "Failed to delete media" }, { status: 500 });
